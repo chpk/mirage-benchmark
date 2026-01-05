@@ -1,0 +1,120 @@
+# ========== DATA AND RESULTS ==========
+results/
+trials/
+SemanticChunks/
+archive/
+Samples/
+full_iec_old/
+embeddings/
+
+# ========== IEC RELATED ==========
+*iec*
+*IEC*
+
+# ========== VECTOR STORES ==========
+vectorstore/
+vectorstores/
+faiss_index/
+indices/
+*.faiss
+*.index
+
+# ========== MODEL WEIGHTS ==========
+*.pt
+*.pth
+*.bin
+*.h5
+*.hdf5
+*.onnx
+*.safetensors
+weights/
+models/
+checkpoints/
+
+# ========== DATA FILES ==========
+*.json
+!package.json
+*.jsonl
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.csv
+*.tsv
+*.parquet
+
+# ========== ARCHIVES ==========
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# ========== LOGS ==========
+*.log
+logs/
+
+# ========== IMAGES (except assets) ==========
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+!assets/**
+
+# ========== PYTHON ==========
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ========== ENVIRONMENTS ==========
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# ========== IDE ==========
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sws
+*~
+.DS_Store
+Thumbs.db
+
+# ========== JUPYTER ==========
+.ipynb_checkpoints/
+*.ipynb
+
+# ========== CACHE ==========
+.cache/
+cache/
+*.cache
+.pytest_cache/
+
+# ========== INTERNAL ==========
+VLM2Vec/
+gpu_usage_check/
+LLM_CALLS_AND_HYPERPARAMETERS.md
+METRICS_IMPLEMENTATION_VERIFICATION.md
+
+# ========== SHELL SCRIPTS (local) ==========
+*.sh
+!run_example.sh
+
+# ========== CONFIG (user specific) ==========
+config.yaml
+config.yaml.backup
+config.yaml.*backup*

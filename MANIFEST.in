@@ -1,0 +1,47 @@
+# Include important files
+include README.md
+include LICENSE
+include requirements.txt
+include config.yaml.example
+include pyproject.toml
+
+# Include all Python files
+recursive-include *.py
+
+# Include assets (images for documentation)
+recursive-include assets *.png *.jpg *.jpeg *.gif *.svg
+
+# Include data placeholders
+include data/.gitkeep
+include output/.gitkeep
+
+# Exclude sensitive and generated files
+exclude config.yaml
+exclude config.yaml.backup
+exclude config.yaml.domain_run_backup
+
+# Exclude data and results directories
+prune data
+prune results
+prune trials
+prune output
+prune archive
+prune Samples
+prune SemanticChunks
+prune full_iec_old
+prune VLM2Vec
+prune gpu_usage_check
+
+# Exclude cache and build artifacts
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.so
+global-exclude .git*
+global-exclude *.log
+global-exclude *.faiss
+global-exclude *.egg-info
+
+# Exclude IDE files
+global-exclude .idea
+global-exclude .vscode
+global-exclude *.swp

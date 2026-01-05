@@ -1,7 +1,29 @@
 # ========== DATA AND RESULTS ==========
-results/
-trials/
-SemanticChunks/
+# Allow folder structure with .gitkeep
+results/*
+!results/.gitkeep
+!results/example/
+results/example/*
+!results/example/.gitkeep
+
+trials/*
+!trials/.gitkeep
+!trials/example/
+trials/example/*
+!trials/example/.gitkeep
+
+SemanticChunks/*
+!SemanticChunks/.gitkeep
+!SemanticChunks/example/
+SemanticChunks/example/*
+!SemanticChunks/example/.gitkeep
+
+# Data folder - allow sample dataset
+data/*
+!data/documents/
+!data/FinanceAnnualReports.zip
+!data/.gitkeep
+
 archive/
 Samples/
 full_iec_old/
@@ -33,7 +55,6 @@ checkpoints/
 
 # ========== DATA FILES ==========
 *.json
-!package.json
 *.jsonl
 *.pkl
 *.pickle
@@ -43,8 +64,7 @@ checkpoints/
 *.tsv
 *.parquet
 
-# ========== ARCHIVES ==========
-*.zip
+# ========== ARCHIVES (except sample) ==========
 *.tar
 *.tar.gz
 *.tar.bz2
@@ -112,7 +132,6 @@ METRICS_IMPLEMENTATION_VERIFICATION.md
 
 # ========== SHELL SCRIPTS (local) ==========
 *.sh
-!run_example.sh
 
 # ========== CONFIG (user specific) ==========
 config.yaml

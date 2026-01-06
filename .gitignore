@@ -137,3 +137,24 @@ METRICS_IMPLEMENTATION_VERIFICATION.md
 config.yaml
 config.yaml.backup
 config.yaml.*backup*
+
+# ========== OLD ROOT LEVEL PYTHON FILES ==========
+# These have been moved to src/mirage/
+/call_llm.py
+/config_loader.py
+/context_retrieved.py
+/data_stats.py
+/deduplication.py
+/domain_expert.py
+/embed_models.py
+/main.py
+/md_to_semantic_chunks.py
+/metrics.py
+/metrics_optimized.py
+/pdf_to_md.py
+/preflight_check.py
+/prompt.py
+/qa_gen_multi_hop.py
+/rerankers_multimodal.py
+/rerankers_text_qa_llm.py
+/run_ablation_study.py

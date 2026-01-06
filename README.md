@@ -425,11 +425,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 Apache License 2.0 - see [LICENSE](LICENSE)
 
-## Acknowledgments
-
-- [RAGAS](https://github.com/explodinggradients/ragas) for evaluation metrics
-- [BERTopic](https://github.com/MaartenGr/BERTopic) for topic modeling
-- [FAISS](https://github.com/facebookresearch/faiss) for similarity search
-- [Docling](https://github.com/DS4SD/docling) for PDF processing
 
 

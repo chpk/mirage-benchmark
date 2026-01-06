@@ -53,9 +53,25 @@ pip install -e .
 ### With Optional Dependencies
 
 ```bash
-pip install mirage-benchmark[gpu]   # GPU support
-pip install mirage-benchmark[pdf]   # PDF processing
-pip install mirage-benchmark[all]   # All dependencies
+pip install mirage-benchmark[pdf]   # PDF processing (docling, matplotlib)
+pip install mirage-benchmark[eval]  # Evaluation metrics (ragas)
+pip install mirage-benchmark[all]   # All pip dependencies
+```
+
+### GPU Support (FAISS-GPU)
+
+For GPU-accelerated similarity search, install FAISS-GPU via conda:
+
+```bash
+# Create conda environment (recommended)
+conda create -n mirage python=3.11
+conda activate mirage
+
+# Install FAISS-GPU
+conda install -c pytorch faiss-gpu
+
+# Then install MiRAGE
+pip install mirage-benchmark[gpu]
 ```
 
 ## Quick Start
@@ -92,18 +108,21 @@ cp /path/to/your/*.pdf data/my_documents/
 ### Step 3: Run MiRAGE
 
 ```bash
-# Basic usage
+# Using Gemini (default backend) - API key from environment
+export GEMINI_API_KEY="your-gemini-key"
 python run_mirage.py --input data/my_documents --output output/my_dataset
 
-# With API key as argument
-python run_mirage.py -i data/my_documents -o output/my_dataset --api-key YOUR_API_KEY
+# Using Gemini with API key as argument
+python run_mirage.py -i data/my_documents -o output/my_dataset --backend gemini --api-key YOUR_GEMINI_KEY
 
 # Using OpenAI
-python run_mirage.py -i data/my_documents -o output/my_dataset --backend openai
+python run_mirage.py -i data/my_documents -o output/my_dataset --backend openai --api-key YOUR_OPENAI_KEY
 
-# Using local Ollama
+# Using local Ollama (no API key needed)
 python run_mirage.py -i data/my_documents -o output/my_dataset --backend ollama
 ```
+
+**Note**: When using `--api-key`, always specify `--backend` to indicate which service the key is for.
 
 ### Step 4: Check Results
 
@@ -129,11 +148,16 @@ python run_mirage.py \
     --input data/documents \
     --output output/results \
     --backend gemini \
-    --api-key YOUR_API_KEY \
+    --api-key YOUR_GEMINI_KEY \
     --num-qa-pairs 100 \
     --max-workers 4 \
     --verbose
 ```
+
+**Backend Options:**
+- `gemini` (default) - Requires `GEMINI_API_KEY` or `--api-key`
+- `openai` - Requires `OPENAI_API_KEY` or `--api-key`
+- `ollama` - No API key needed (runs locally)
 
 ### Run Preflight Checks
 

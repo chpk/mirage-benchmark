@@ -87,16 +87,16 @@ Environment Variables:
     
     # API and backend configuration
     parser.add_argument(
-        "--api-key", "-k",
-        type=str,
-        help="API key for LLM backend (or set via environment variable)"
-    )
-    parser.add_argument(
         "--backend", "-b",
         type=str,
         choices=["gemini", "openai", "ollama"],
         default="gemini",
-        help="LLM backend to use (default: gemini)"
+        help="LLM backend to use: gemini (default), openai, or ollama"
+    )
+    parser.add_argument(
+        "--api-key", "-k",
+        type=str,
+        help="API key for the selected backend. Use with --backend to specify which service."
     )
     parser.add_argument(
         "--model",
@@ -157,7 +157,7 @@ Environment Variables:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 1.0.1"
+        version="%(prog)s 1.0.5"
     )
     
     return parser.parse_args()

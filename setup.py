@@ -13,7 +13,7 @@ long_description = readme_path.read_text(encoding="utf-8") if readme_path.exists
 
 setup(
     name="mirage-benchmark",
-    version="1.0.4",
+    version="1.0.5",
     author="MiRAGE Authors",
     author_email="contact@example.com",
     description="A Multiagent Framework for Generating Multimodal Multihop QA Datasets for RAG Evaluation",
@@ -50,13 +50,14 @@ setup(
     # Optional dependencies
     extras_require={
         "gpu": [
-            "faiss-gpu>=1.7.0",
+            # Note: faiss-gpu must be installed via conda: conda install -c pytorch faiss-gpu
             "bitsandbytes>=0.43.0",
             "accelerate>=0.20.0",
         ],
         "pdf": [
-            "docling>=0.1.0",
+            "docling>=2.0.0",
             "pypdfium2>=4.0.0",
+            "matplotlib>=3.5.0",
         ],
         "eval": [
             "ragas>=0.1.0",
@@ -72,13 +73,13 @@ setup(
             "build>=0.10.0",
         ],
         "all": [
-            # GPU
-            "faiss-gpu>=1.7.0",
+            # GPU (faiss-gpu via conda)
             "bitsandbytes>=0.43.0",
             "accelerate>=0.20.0",
             # PDF
-            "docling>=0.1.0",
+            "docling>=2.0.0",
             "pypdfium2>=4.0.0",
+            "matplotlib>=3.5.0",
             # Eval
             "ragas>=0.1.0",
             "datasets>=2.0.0",

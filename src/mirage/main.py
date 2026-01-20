@@ -1036,7 +1036,8 @@ def process_single_chunk_for_qa(chunk_data: tuple, domain: str, expert_persona: 
                 'verification_result': verification
             }
             
-            if is_verification_successful(verification):
+            if is_verification_successful(verification, question=qa['question'], 
+                                          answer=qa['answer'], chunks=context_chunks):
                 successful_qa.append(qa_entry)
             else:
                 # Collect for correction attempt if enabled
@@ -1110,7 +1111,10 @@ def process_single_chunk_for_qa(chunk_data: tuple, domain: str, expert_persona: 
                         'correction_attempt': correction_attempt
                     }
                     
-                    if is_verification_successful(corrected_verification):
+                    if is_verification_successful(corrected_verification,
+                                                  question=corrected['question'],
+                                                  answer=corrected['answer'],
+                                                  chunks=context_chunks):
                         print(f"    Corrected pair passed verification")
                         successful_qa.append(corrected_entry)
                     else:

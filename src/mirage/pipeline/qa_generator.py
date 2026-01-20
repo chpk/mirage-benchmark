@@ -528,7 +528,57 @@ def process_chunk_for_qa(chunk_data: Dict, expert_persona: str, domain: str) -> 
         "rejected_qa_pairs": rejected_pairs
     }
 
-def is_verification_successful(verification_result: str) -> bool:
+def has_misleading_visual_reference(question: str, answer: str, chunks: List[Dict] = None) -> bool:
+    """Detect if question mentions visual content but answer doesn't need it.
+    
+    Returns True if the question has a misleading visual reference.
+    """
+    import re
+    
+    # Visual reference patterns in question
+    visual_patterns = [
+        r'\b(as\s+)?(depicted|shown|illustrated|displayed)\s+(in|by)\s+(the\s+)?(figure|diagram|schematic|image|chart|graph|picture)',
+        r'\b(the\s+)?(figure|diagram|schematic|image|chart|graph|picture)\s+(shows|depicts|illustrates)',
+        r'\bbased\s+on\s+(the\s+)?(figure|diagram|schematic|image|chart|graph|picture)',
+        r'\baccording\s+to\s+(the\s+)?(figure|diagram|schematic|image|chart|graph|picture)',
+        r'\b(in|from)\s+(the\s+)?(figure|diagram|schematic|image|chart|graph|picture)',
+    ]
+    
+    question_lower = question.lower()
+    has_visual_ref = any(re.search(p, question_lower) for p in visual_patterns)
+    
+    if not has_visual_ref:
+        return False  # No visual reference, not misleading
+    
+    # Check if chunks actually have images
+    has_images = False
+    if chunks:
+        for chunk in chunks:
+            if chunk.get('image_path') or chunk.get('artifact'):
+                has_images = True
+                break
+    
+    # Check if answer references visual elements (suggesting it actually uses the image)
+    visual_answer_patterns = [
+        r'\b(the\s+)?(figure|diagram|image|chart|graph)\s+(shows|indicates|displays)',
+        r'\bvisual(ly)?',
+        r'\b(top|bottom|left|right|center)\s+(of|portion|section)',
+        r'\b(axis|legend|label|arrow|line|curve|bar)',
+    ]
+    answer_lower = answer.lower()
+    answer_uses_visual = any(re.search(p, answer_lower) for p in visual_answer_patterns)
+    
+    # Misleading if: question has visual ref BUT (no images in chunks OR answer doesn't use visual)
+    if not has_images:
+        return True  # Question mentions visual but no images exist
+    if not answer_uses_visual:
+        return True  # Question mentions visual but answer doesn't interpret any visual elements
+    
+    return False
+
+
+def is_verification_successful(verification_result: str, question: str = None, 
+                                answer: str = None, chunks: List[Dict] = None) -> bool:
     """Check if verification indicates success.
     
     New format: <|#|>START<|#|>Status<|#|><Label 1>, <Label 2>, <Label 3><|#|>Explanation<|#|><text><|#|>END<|#|>
@@ -549,6 +599,11 @@ def is_verification_successful(verification_result: str) -> bool:
     
     has_bad = any(bad in status_content.upper() for bad in bad_values)
     has_all_good = all(good in status_content.upper() for good in required_good)
+    
+    # Additional code-level check for misleading visual references
+    if question and answer and has_all_good and not has_bad:
+        if has_misleading_visual_reference(question, answer, chunks):
+            return False  # Fail due to misleading visual reference
     
     return has_all_good and not has_bad
 
@@ -763,8 +818,14 @@ if __name__ == "__main__":
             
             # Process selected Q&A pairs
             successful_count = 0
+            context_chunks = result.get("context_chunks", [])
             for qa_pair in result.get("selected_qa_pairs", []):
-                if is_verification_successful(qa_pair.get("verification_result", "")):
+                if is_verification_successful(
+                    qa_pair.get("verification_result", ""),
+                    question=qa_pair.get("question", ""),
+                    answer=qa_pair.get("answer", ""),
+                    chunks=context_chunks
+                ):
                     successful_count += 1
                     # Create individual entry for each successful Q&A pair
                     successful_qa_pairs.append({

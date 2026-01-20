@@ -473,9 +473,12 @@ Answer(s): {answers}
 **Evaluation Instructions:**
 Analyze the QA pair and return the appropriate labels based on the following logic:
 
-1.  **Question Standalone Check:**
-    *   **QUESTION_INCORRECT:** Use if the question refers to unseen context (e.g., "the provided text," "this figure," "the described warning") or lacks specific identifiers.
-    *   **QUESTION_CORRECT:** Use if the question is unambiguous and fully self-contained (e.g., explicit standard names like "IEC 60034").
+1.  **Question Standalone & Reference Validity Check:**
+    *   **QUESTION_INCORRECT:** Use if ANY of these apply:
+        - Question refers to unseen context with vague references (e.g., "the provided text," "this figure," "the table")
+        - Question lacks specific identifiers
+        - Question mentions a figure/diagram/schematic/image but the answer can be derived ENTIRELY from text (misleading visual reference - the question claims to need visual content but doesn't)
+    *   **QUESTION_CORRECT:** Use if the question is unambiguous, fully self-contained, AND any visual references are genuinely necessary for the answer (e.g., reading values from graphs, identifying components in diagrams).
 
 2.  **Answer Accuracy Check:**
     *   **ANSWER_CORRECT:** Use if the answer is factually supported by specific data/text in the content.
@@ -491,7 +494,7 @@ Status<|#|><Label 1>, <Label 2>, <Label 3><|#|>Explanation<|#|><Brief single-sen
 <|#|>END<|#|>
 
 ------------------------------------------------
-Example (Vague Reference - "in the table/figure" - QUESTION_INCORRECT):
+Example 1 (Vague Reference - QUESTION_INCORRECT):
 ------------------------------------------------
 Content:
 The operating limits for Series-X pumps are defined by the manufacturer specifications.
@@ -506,7 +509,25 @@ According to the provided data, the maximum pressure for oil is 25 bar, and the 
 
 RESPONSE:
 <|#|>START<|#|>
-Status<|#|>QUESTION_INCORRECT, ANSWER_CORRECT, REQUIRES_CONTENT<|#|>Explanation<|#|>The question refers to "the table" and "figure 21". A standalone reader sees only the question text and does not know the table or figure 21. To be CORRECT, the question must explicitly name the source or be fully self-contained.
+Status<|#|>QUESTION_INCORRECT, ANSWER_CORRECT, REQUIRES_CONTENT<|#|>Explanation<|#|>The question refers to "the table" and "figure 21" - vague references that a standalone reader cannot identify.
+<|#|>END<|#|>
+
+------------------------------------------------
+Example 2 (Misleading Visual Reference - QUESTION_INCORRECT):
+------------------------------------------------
+Content:
+Recipe Instructions: Preheat oven to 350°F. Mix flour and sugar in equal parts. Bake for 25 minutes.
+[Image: Photo of a finished chocolate cake]
+
+Question:
+Based on the cake shown in the image, what temperature should the oven be set to?
+
+Answer:
+The oven should be set to 350°F.
+
+RESPONSE:
+<|#|>START<|#|>
+Status<|#|>QUESTION_INCORRECT, ANSWER_CORRECT, REQUIRES_CONTENT<|#|>Explanation<|#|>The question mentions "the cake shown in the image" but the answer (350°F) comes entirely from the text instructions - looking at the image is unnecessary. The visual reference is misleading.
 <|#|>END<|#|>
 """
 

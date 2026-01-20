@@ -24,6 +24,7 @@ data/*
 !data/FinanceAnnualReports.zip
 !data/.gitkeep
 
+output/*
 archive/
 Samples/
 full_iec_old/

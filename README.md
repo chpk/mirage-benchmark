@@ -318,6 +318,18 @@ output/my_dataset/
   <img src="assets/ample question-answer pair generated.png" alt="Sample QA Pair" width="100%">
 </p>
 
+### Multihop QA Visualization
+
+Explore an interactive visualization of the multihop QA generation process, showing how context chunks are linked through keywords to generate complex questions:
+
+**[🔗 View Interactive Multihop QA Visualization](https://htmlpreview.github.io/?https://github.com/ChandanKSahu/MiRAGE/blob/main/assets/mirage_qa_gen.html)**
+
+The visualization demonstrates:
+- Context chunk retrieval and keyword extraction
+- Keyword chain relationships across chunks
+- Iterative retrieval depth progression
+- Final question-answer generation with highlighted concepts
+
 ## Project Structure
 
 ```

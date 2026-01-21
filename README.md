@@ -321,7 +321,7 @@ Then run:
 python run_mirage.py --config config.yaml
 ```
 
-## ⚠️ Cost Optimization
+### Cost Optimization
 
 MiRAGE uses LLM/VLM APIs extensively. Two operations consume the most tokens:
 
@@ -383,7 +383,7 @@ Use `print_token_stats()` or check the pipeline summary to monitor actual token 
 
 Explore an interactive visualization of the multihop QA generation process, showing how context chunks are linked through keywords to generate complex questions:
 
-**[🔗 View Interactive Multihop QA Visualization](https://htmlpreview.github.io/?https://github.com/ChandanKSahu/MiRAGE/blob/main/assets/mirage_qa_gen.html)**
+**[ View Interactive Multihop QA Visualization](https://htmlpreview.github.io/?https://github.com/ChandanKSahu/MiRAGE/blob/main/assets/mirage_qa_gen.html)**
 
 The visualization demonstrates:
 - Context chunk retrieval and keyword extraction

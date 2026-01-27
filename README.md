@@ -61,8 +61,8 @@ pip install mirage-benchmark
 ### From Source
 
 ```bash
-git clone https://github.com/ChandanKSahu/MiRAGE.git
-cd MiRAGE
+git clone https://github.com/chpk/mirage-benchmark.git
+cd mirage-benchmark
 pip install -e .
 ```
 

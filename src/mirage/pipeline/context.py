@@ -31,7 +31,7 @@ _embedder_init_lock = threading.Lock()
 
 
 def _get_embedder_for_model(model_name: str):
-    """Get the correct embedder based on model name (thread-safe with caching)."""
+    """Get the correct embedder based on model name (thread-safe with caching, GPU-enabled)."""
     import sys
     this_module = sys.modules[__name__]
     
@@ -41,17 +41,39 @@ def _get_embedder_for_model(model_name: str):
         if hasattr(this_module, '_cached_query_embedder') and this_module._cached_query_embedder is not None:
             return this_module._cached_query_embedder
         
+        # Try to use cached embedder from main.py (already on GPU)
+        if hasattr(this_module, '_cached_embedder') and this_module._cached_embedder is not None:
+            print(f"Using cached embedder from main pipeline (GPU-enabled)...")
+            this_module._cached_query_embedder = this_module._cached_embedder
+            return this_module._cached_embedder
+        
+        # Get GPU configuration from config
+        try:
+            from mirage.core.config import get_embedding_config
+            embed_config = get_embedding_config()
+            gpus = embed_config.get('gpus', None)
+            # Determine device: use first GPU from list, or cuda:0, or cpu
+            if gpus and len(gpus) > 0:
+                device = f"cuda:{gpus[0]}"
+            elif torch.cuda.is_available():
+                device = "cuda:0"
+            else:
+                device = "cpu"
+        except:
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
+            gpus = None
+        
         # Load the embedder (only one thread will do this)
         if model_name.lower() in ('bge_m3', 'bge-m3', 'baai/bge-m3'):
-            print(f"Loading BGE-M3 embedder for query (thread-safe)...")
-            embedder = SentenceTransformer('BAAI/bge-m3')
+            print(f"Loading BGE-M3 embedder for query on {device} (thread-safe)...")
+            embedder = SentenceTransformer('BAAI/bge-m3', device=device)
         elif model_name.lower() in ('nomic', 'nomic_embed', 'nomic-ai/nomic-embed-multimodal-7b'):
-            print(f"Loading Nomic embedder for query...")
-            embedder = NomicEmbedder()
+            print(f"Loading Nomic embedder for query on {device}...")
+            embedder = NomicEmbedder(gpus=gpus)
         else:
             # Default to BGE-M3 for unknown models
-            print(f"Unknown model {model_name}, defaulting to BGE-M3 embedder...")
-            embedder = SentenceTransformer('BAAI/bge-m3')
+            print(f"Unknown model {model_name}, defaulting to BGE-M3 embedder on {device}...")
+            embedder = SentenceTransformer('BAAI/bge-m3', device=device)
         
         # Cache it for future calls
         this_module._cached_query_embedder = embedder

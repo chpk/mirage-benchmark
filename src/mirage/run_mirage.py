@@ -141,8 +141,8 @@ Environment Variables:
     parser.add_argument(
         "--num-qa-pairs",
         type=int,
-        default=100,
-        help="Target number of QA pairs to generate (default: 100)"
+        default=10,
+        help="Target number of QA pairs to generate (default: 10)"
     )
     parser.add_argument(
         "--max-workers",

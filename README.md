@@ -405,7 +405,7 @@ Use `print_token_stats()` or check the pipeline summary to monitor actual token 
 | `--backend` | `-b` | Backend: gemini, openai, ollama | gemini |
 | `--model` | | Model name | Auto |
 | `--config` | `-c` | Config file path | config.yaml |
-| `--num-qa-pairs` | | Target QA pairs to generate | 100 |
+| `--num-qa-pairs` | | Target QA pairs to generate | 10 |
 | `--max-depth` | | Maximum depth for multi-hop retrieval | 2 |
 | `--embedding-model` | | Embedding model: `auto`, `qwen3_vl`, `nomic`, `bge_m3` | auto |
 | `--reranker-model` | | Reranker model: `gemini_vlm`, `monovlm`, `text_embedding` | auto (based on backend) |

@@ -224,17 +224,84 @@ def init_gpu_lock():
     _GPU_LOCK = threading.Lock()
 
 def get_reranker():
-    """Get or create VLM reranker using Gemini API (cached if CACHE_EMBEDDINGS=True)"""
-    if CACHE_EMBEDDINGS:
-        if 'reranker' not in _MODEL_CACHE or _MODEL_CACHE['reranker'] is None:
-            print(f"Loading VLM reranker (uses {BACKEND} API)...")
-            from mirage.embeddings.rerankers_multimodal import GeminiVLMReranker
-            _MODEL_CACHE['reranker'] = GeminiVLMReranker()
-            print(f"VLM reranker loaded and cached")
-        return _MODEL_CACHE['reranker']
+    """Get or create reranker based on backend/API keys (cached if CACHE_EMBEDDINGS=True)
+    
+    Auto-selects reranker:
+    - Gemini backend/API key → GeminiVLMReranker
+    - OpenAI backend/API key → GeminiVLMReranker (if Gemini key available) or MonoVLM
+    - Otherwise → Uses RERANKER_MODEL env/config or defaults to GeminiVLMReranker
+    """
+    # Determine which reranker to use based on backend and API keys
+    reranker_type = None
+    
+    # Check if explicit reranker model is set
+    if RERANKER_MODEL:
+        reranker_type = RERANKER_MODEL.lower()
     else:
+        # Auto-select based on backend
+        # Ensure BACKEND is initialized
+        try:
+            backend_upper = BACKEND.upper() if BACKEND else ""
+        except (NameError, AttributeError):
+            # BACKEND not initialized yet, check environment
+            backend_upper = os.environ.get("LLM_BACKEND", os.environ.get("MIRAGE_BACKEND", "")).upper()
+        
+        # Check for API keys
+        has_gemini_key = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+        has_openai_key = bool(os.environ.get("OPENAI_API_KEY"))
+        
+        if backend_upper == "GEMINI" or (backend_upper == "OPENAI" and has_gemini_key):
+            reranker_type = "gemini_vlm"
+        elif backend_upper == "OPENAI" and has_openai_key:
+            # For OpenAI, prefer Gemini if available, otherwise use MonoVLM
+            if has_gemini_key:
+                reranker_type = "gemini_vlm"
+            else:
+                reranker_type = "monovlm"
+        else:
+            # Default: try Gemini first, then MonoVLM
+            if has_gemini_key:
+                reranker_type = "gemini_vlm"
+            else:
+                reranker_type = "monovlm"
+    
+    # Get cached reranker if available
+    cache_key = f'reranker_{reranker_type}'
+    if CACHE_EMBEDDINGS:
+        if cache_key not in _MODEL_CACHE or _MODEL_CACHE[cache_key] is None:
+            print(f"Loading {reranker_type} reranker...")
+            reranker = _create_reranker(reranker_type)
+            _MODEL_CACHE[cache_key] = reranker
+            print(f"{reranker_type} reranker loaded and cached")
+        return _MODEL_CACHE[cache_key]
+    else:
+        return _create_reranker(reranker_type)
+
+def _create_reranker(reranker_type: str):
+    """Create a reranker instance based on type"""
+    reranker_type_lower = reranker_type.lower()
+    
+    if reranker_type_lower == "gemini_vlm":
         from mirage.embeddings.rerankers_multimodal import GeminiVLMReranker
         return GeminiVLMReranker()
+    elif reranker_type_lower in ["monovlm", "mono_vlm"]:
+        from mirage.embeddings.rerankers_multimodal import MonoVLMReranker
+        return MonoVLMReranker()
+    elif reranker_type_lower == "text_embedding":
+        from mirage.embeddings.rerankers_multimodal import TextEmbeddingReranker
+        return TextEmbeddingReranker()
+    elif reranker_type_lower == "vlm":
+        from mirage.embeddings.rerankers_multimodal import VLMReranker
+        return VLMReranker()
+    else:
+        # Default to Gemini if available, otherwise MonoVLM
+        has_gemini_key = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+        if has_gemini_key:
+            from mirage.embeddings.rerankers_multimodal import GeminiVLMReranker
+            return GeminiVLMReranker()
+        else:
+            from mirage.embeddings.rerankers_multimodal import MonoVLMReranker
+            return MonoVLMReranker()
 
 def _load_sentence_transformer(model_name: str):
     """Load SentenceTransformer safely, avoiding meta tensor issues"""

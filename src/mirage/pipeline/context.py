@@ -356,6 +356,17 @@ def retrieve_and_rerank(query: str, model_name: str = None,
         # Extract all image paths from artifact field (chunks.json contains artifact field)
         artifact_text = chunk.get('artifact', 'None')
         artifact_paths = extract_image_paths(artifact_text, file_name)  # List of image paths
+        
+        # Also check content field for markdown image references (some chunks have images in content but not artifact)
+        content_text = chunk.get('content', '')
+        if content_text and ('![' in content_text and '](' in content_text):
+            # Extract image paths from content field as well
+            content_image_paths = extract_image_paths(content_text, file_name)
+            # Merge with artifact_paths, avoiding duplicates
+            for path in content_image_paths:
+                if path not in artifact_paths:
+                    artifact_paths.append(path)
+        
         image_path = artifact_paths[0] if artifact_paths else None  # First image for backward compatibility
         
         retrieved_chunks.append({

@@ -466,8 +466,8 @@ def check_input_data() -> CheckResult:
         from mirage.core.config import get_paths_config
         paths = get_paths_config()
 
-        # Use override if set, otherwise use config
-        input_pdf_dir = _input_dir_override or paths.get('input_pdf_dir')
+        # Use override if set, then check environment variable, then use config
+        input_pdf_dir = _input_dir_override or os.environ.get("MIRAGE_INPUT_DIR") or paths.get('input_pdf_dir')
         input_chunks_file = paths.get('input_chunks_file')
         
         if input_chunks_file and os.path.exists(input_chunks_file):

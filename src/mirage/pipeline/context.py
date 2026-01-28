@@ -376,7 +376,7 @@ def retrieve_and_rerank(query: str, model_name: str = None,
     
     # Rerank using MonoVLM (can swap with VLMReranker or TextEmbeddingReranker)
     print(f"\n{'='*60}")
-    print(f"Reranking with MonoVLM to get top {rerank_top_k}...")
+    print(f"Reranking {len(retrieved_chunks)} chunks with MonoVLM to get top {rerank_top_k}...")
     print(f"{'='*60}")
     
     # Use cached reranker if available
@@ -385,6 +385,7 @@ def retrieve_and_rerank(query: str, model_name: str = None,
         reranker = this_module._cached_reranker
         print(f"✅ Using cached MonoVLM reranker")
     else:
+        print(f"Loading MonoVLM reranker (this may take a moment)...")
         reranker = MonoVLMReranker()
     
     # Use GPU lock if available for thread-safe access

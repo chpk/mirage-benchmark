@@ -557,8 +557,10 @@ class MonoVLMReranker(ChunkReranker):
         Returns:
             List of tuples: (original_index, relevance_score, chunk_dict)
         """
+        from tqdm import tqdm
         scores = []
-        for idx, chunk in enumerate(chunks):
+        print(f"Scoring {len(chunks)} chunks for reranking...")
+        for idx, chunk in enumerate(tqdm(chunks, desc="Reranking chunks")):
             score = self._score_chunk(query, chunk)
             scores.append((idx, score))
         

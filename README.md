@@ -92,7 +92,13 @@ pip install mirage-benchmark[gpu]
 
 ## Quick Start
 
-### Step 1: Set Up API Key
+### Step 1: Install the Package
+
+```bash
+pip install mirage-benchmark
+```
+
+### Step 2: Set Up API Key
 
 Choose one of the following backends:
 
@@ -113,7 +119,7 @@ ollama serve
 ollama pull llama3
 ```
 
-### Step 2: Prepare Your Data
+### Step 3: Prepare Your Data
 
 Place your documents in a folder:
 ```bash
@@ -121,35 +127,52 @@ mkdir -p data/my_documents
 cp /path/to/your/*.pdf data/my_documents/
 ```
 
-### Step 3: Run MiRAGE
+### Step 4: Run MiRAGE
+
+After pip installation, use the `run_mirage` command:
 
 ```bash
-# Using Gemini (default backend) - API key from environment
+# Basic usage with Gemini (default backend) - API key from environment
 export GEMINI_API_KEY="your-gemini-key"
-python run_mirage.py --input data/my_documents --output output/my_dataset
+run_mirage --input data/my_documents --output output/my_dataset --num-qa-pairs 1
 
 # Using Gemini with API key as argument
-python run_mirage.py -i data/my_documents -o output/my_dataset --backend gemini --api-key YOUR_GEMINI_KEY
+run_mirage -i data/my_documents -o output/my_dataset --backend gemini --api-key YOUR_GEMINI_KEY
 
 # Using OpenAI
-python run_mirage.py -i data/my_documents -o output/my_dataset --backend openai --api-key YOUR_OPENAI_KEY
+run_mirage -i data/my_documents -o output/my_dataset --backend openai --api-key YOUR_OPENAI_KEY
 
 # Using local Ollama (no API key needed)
-python run_mirage.py -i data/my_documents -o output/my_dataset --backend ollama
+run_mirage -i data/my_documents -o output/my_dataset --backend ollama
 ```
 
 **Note**: When using `--api-key`, always specify `--backend` to indicate which service the key is for.
 
-### Step 4: Check Results
+### Step 5: Check Results
 
 ```bash
 ls output/my_dataset/
 # qa_multihop_pass.json  - Generated QA pairs (always created)
 # chunks.json            - Semantic chunks (always created)
+# multihop_visualization.html - Interactive visualization (always created)
+# embeddings/            - FAISS index and embeddings
 
 # Optional outputs (if --deduplication and --evaluation flags used):
 # qa_deduplicated.json   - Deduplicated QA pairs (with --deduplication)
 # evaluation_report.json - Quality metrics (with --evaluation)
+```
+
+### Quick Test
+
+```bash
+# Verify installation
+run_mirage --version
+
+# Run preflight checks
+run_mirage --preflight
+
+# Generate 1 QA pair for testing
+run_mirage --input data/sample --output results/test --num-qa-pairs 1
 ```
 
 ## Usage
@@ -160,7 +183,7 @@ By default, MiRAGE runs the core pipeline: document processing, chunking, embedd
 
 ```bash
 # Default: Generates QA pairs without deduplication or evaluation
-python run_mirage.py --input <INPUT_DIR> --output <OUTPUT_DIR>
+run_mirage --input <INPUT_DIR> --output <OUTPUT_DIR> --num-qa-pairs 100
 ```
 
 ### With Deduplication
@@ -168,7 +191,7 @@ python run_mirage.py --input <INPUT_DIR> --output <OUTPUT_DIR>
 To merge similar QA pairs and remove duplicates:
 
 ```bash
-python run_mirage.py -i data/documents -o output/results --deduplication
+run_mirage -i data/documents -o output/results --num-qa-pairs 100 --deduplication
 ```
 
 ### With Evaluation Metrics
@@ -176,29 +199,41 @@ python run_mirage.py -i data/documents -o output/results --deduplication
 To compute quality metrics (faithfulness, relevancy, etc.):
 
 ```bash
-python run_mirage.py -i data/documents -o output/results --evaluation
+run_mirage -i data/documents -o output/results --num-qa-pairs 100 --evaluation
 ```
 
 ### Full Pipeline (Deduplication + Evaluation)
 
 ```bash
-python run_mirage.py -i data/documents -o output/results --deduplication --evaluation
+run_mirage -i data/documents -o output/results --num-qa-pairs 100 --deduplication --evaluation
 ```
 
 ### With All Options
 
 ```bash
-python run_mirage.py \
+run_mirage \
     --input data/documents \
     --output output/results \
     --backend gemini \
     --api-key YOUR_GEMINI_KEY \
     --num-qa-pairs 100 \
     --max-workers 4 \
+    --max-depth 2 \
+    --embedding-model auto \
+    --reranker-model gemini_vlm \
     --deduplication \
     --evaluation \
     --verbose
 ```
+
+### Auto-Selected Reranker
+
+The reranker is automatically selected based on your backend/API keys:
+- **Gemini backend/key** → Uses Gemini VLM reranker (fast, API-based, uses same model as VLM config)
+- **OpenAI backend** → Uses Gemini VLM if Gemini key available, else MonoVLM
+- **No API keys** → Falls back to MonoVLM (local model, slower)
+
+You can override with `--reranker-model` flag (options: `gemini_vlm`, `monovlm`, `text_embedding`).
 
 **Backend Options:**
 - `gemini` (default) - Requires `GEMINI_API_KEY` or `--api-key`
@@ -221,19 +256,18 @@ python run_mirage.py \
 Before running the full pipeline, verify your setup:
 
 ```bash
-python run_mirage.py --preflight
+run_mirage --preflight
 ```
 
 ### Using Sample Dataset
 
-A sample dataset is included for testing:
-
 ```bash
-# Unzip sample data
-unzip data/FinanceAnnualReports.zip -d data/sample/
+# Prepare sample data (if you have it)
+mkdir -p data/sample
+cp /path/to/your/documents/*.pdf data/sample/
 
 # Run on sample
-python run_mirage.py -i data/sample -o output/sample_results
+run_mirage -i data/sample -o output/sample_results --num-qa-pairs 10
 ```
 
 ## API Keys Setup
@@ -318,8 +352,10 @@ qa_generation:
 
 Then run:
 ```bash
-python run_mirage.py --config config.yaml
+run_mirage --config config.yaml --input data/documents --output output/results
 ```
+
+**Note**: When installing from pip, you can still use a custom `config.yaml` file. Place it in your working directory or specify the path with `--config`.
 
 ### Cost Optimization
 
@@ -336,10 +372,10 @@ MiRAGE uses LLM/VLM APIs extensively. Two operations consume the most tokens:
 
 ```bash
 # First run: Process and chunk documents
-python run_mirage.py -i data/documents -o output/results
+run_mirage -i data/documents -o output/results --num-qa-pairs 100
 
 # Subsequent runs: Skip processing, only generate QA
-python run_mirage.py -i data/documents -o output/results --skip-pdf-processing --skip-chunking
+run_mirage -i data/documents -o output/results --skip-pdf-processing --skip-chunking --num-qa-pairs 100
 ```
 
 ### 2. Multi-hop Context Building
@@ -369,7 +405,10 @@ Use `print_token_stats()` or check the pipeline summary to monitor actual token 
 | `--backend` | `-b` | Backend: gemini, openai, ollama | gemini |
 | `--model` | | Model name | Auto |
 | `--config` | `-c` | Config file path | config.yaml |
-| `--num-qa-pairs` | | Target QA pairs to generate | 10 |
+| `--num-qa-pairs` | | Target QA pairs to generate | 100 |
+| `--max-depth` | | Maximum depth for multi-hop retrieval | 2 |
+| `--embedding-model` | | Embedding model: `auto`, `qwen3_vl`, `nomic`, `bge_m3` | auto |
+| `--reranker-model` | | Reranker model: `gemini_vlm`, `monovlm`, `text_embedding` | auto (based on backend) |
 | `--max-workers` | | Parallel workers | 4 |
 | `--preflight` | | Run preflight checks only | - |
 | `--skip-preflight` | | Skip preflight checks | - |
@@ -529,62 +568,98 @@ See the module docstrings for detailed API documentation.
 ```bash
 # Using Gemini
 export GEMINI_API_KEY="your-key"
-python run_mirage.py -i data/pdfs -o output/qa_dataset
+run_mirage -i data/pdfs -o output/qa_dataset --num-qa-pairs 100
 
 # Using OpenAI  
 export OPENAI_API_KEY="your-key"
-python run_mirage.py -i data/pdfs -o output/qa_dataset --backend openai
+run_mirage -i data/pdfs -o output/qa_dataset --backend openai --num-qa-pairs 100
 
 # Using Ollama (local, free)
-python run_mirage.py -i data/pdfs -o output/qa_dataset --backend ollama
+run_mirage -i data/pdfs -o output/qa_dataset --backend ollama --num-qa-pairs 100
 ```
 
 ### Generate More QA Pairs
 
 ```bash
-python run_mirage.py -i data/documents -o output/large_dataset --num-qa-pairs 500
+run_mirage -i data/documents -o output/large_dataset --num-qa-pairs 500
 ```
 
 ### Use More Workers
 
 ```bash
-python run_mirage.py -i data/documents -o output/fast_run --max-workers 8
+run_mirage -i data/documents -o output/fast_run --max-workers 8 --num-qa-pairs 100
 ```
 
 ### Skip Already Processed Steps
 
 ```bash
 # If you already have markdown files
-python run_mirage.py -i data/documents -o output/results --skip-pdf-processing
+run_mirage -i data/documents -o output/results --skip-pdf-processing --num-qa-pairs 100
 
 # If you already have chunks
-python run_mirage.py -i data/documents -o output/results --skip-chunking
+run_mirage -i data/documents -o output/results --skip-chunking --num-qa-pairs 100
+```
+
+### Custom Models
+
+```bash
+# Use specific embedding model
+run_mirage -i data/documents -o output/results \
+  --embedding-model nomic --num-qa-pairs 100
+
+# Use specific reranker
+run_mirage -i data/documents -o output/results \
+  --reranker-model monovlm --num-qa-pairs 100
+
+# Custom multi-hop depth
+run_mirage -i data/documents -o output/results \
+  --max-depth 3 --num-qa-pairs 100
 ```
 
 ## Troubleshooting
+
+### Command Not Found
+
+If `run_mirage` command is not found after pip installation:
+
+```bash
+# Check if package is installed
+pip show mirage-benchmark
+
+# Reinstall if needed
+pip install --upgrade mirage-benchmark
+
+# Verify installation
+run_mirage --version
+```
 
 ### API Key Issues
 
 ```bash
 # Check if API key is set
-echo $GEMINI_API_KEY
+echo $GEMINI_API_KEY  # or $OPENAI_API_KEY
 
 # Set it if missing
 export GEMINI_API_KEY="your-key"
-```
-
-### Import Errors
-
-```bash
-# Reinstall package
-pip install -e .
 ```
 
 ### Preflight Check Failures
 
 ```bash
 # Run verbose preflight
-python run_mirage.py --preflight --verbose
+run_mirage --preflight --verbose
+```
+
+### Import Errors (Development)
+
+If you're developing from source and encounter import errors:
+
+```bash
+# Reinstall in editable mode
+pip install -e .
+
+# Or run directly with PYTHONPATH
+PYTHONPATH=src python src/mirage/run_mirage.py --help
 ```
 
 ## Contributing

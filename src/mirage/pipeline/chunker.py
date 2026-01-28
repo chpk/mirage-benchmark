@@ -65,6 +65,13 @@ def parse_chunks_from_response(response: str) -> List[Dict]:
             artifact = re.sub(r'^<artifact>', '', parts[3]).strip()
             status = re.sub(r'^<status>', '', parts[4]).strip()
             
+            # Fix: If artifact is empty/None but content has image references, extract them
+            if (not artifact or artifact == 'None') and content and '![' in content and '](' in content:
+                # Extract all image markdown syntax from content
+                image_matches = re.findall(r'!\[[^\]]*\]\([^)]+\)', content)
+                if image_matches:
+                    artifact = ' '.join(image_matches)  # Join multiple images with space
+            
             chunks.append({
                 'chunk_id': chunk_id,
                 'chunk_type': chunk_type,

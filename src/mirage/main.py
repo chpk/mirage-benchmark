@@ -1340,12 +1340,13 @@ def generate_qa_dataset_parallel(chunks: list, domain: str, expert_persona: str,
     # Target QA count (None = no limit)
     target_qa_count = QA_NUM_PAIRS
     
-    # Optimize: Limit chunks to process when target is small (avoid processing all chunks for 1 QA pair)
-    # Estimate: each chunk might generate 0-3 QA pairs, so for target=1, we only need ~1-2 chunks
-    if target_qa_count and target_qa_count <= 5:
-        max_chunks_to_process = max(target_qa_count * 3, 10)  # Process at most 3x target chunks
+    # Optimize: Limit chunks to process based on target (avoid processing all chunks for small targets)
+    # Process ceiling(1.1 * num_qa_pairs) chunks to account for failures and ensure we reach target
+    if target_qa_count:
+        import math
+        max_chunks_to_process = math.ceil(1.1 * target_qa_count)
         if len(pending_chunk_data) > max_chunks_to_process:
-            print(f"⚠️  Target is small ({target_qa_count} QA pairs). Limiting processing to first {max_chunks_to_process} chunks (out of {len(pending_chunk_data)} total)")
+            print(f"⚠️  Target is {target_qa_count} QA pairs. Limiting processing to first {max_chunks_to_process} chunks (out of {len(pending_chunk_data)} total)")
             pending_chunk_data = pending_chunk_data[:max_chunks_to_process]
     
     print(f"\nUsing {QA_MAX_WORKERS} parallel workers for QA generation")

@@ -172,6 +172,21 @@ if os.environ.get("MIRAGE_NUM_QA_PAIRS"):
     QA_NUM_PAIRS = int(os.environ.get("MIRAGE_NUM_QA_PAIRS"))
 if os.environ.get("MIRAGE_MAX_WORKERS"):
     QA_MAX_WORKERS = int(os.environ.get("MIRAGE_MAX_WORKERS"))
+if os.environ.get("MIRAGE_EMBEDDING_MODEL"):
+    EMBEDDING_MODEL = os.environ.get("MIRAGE_EMBEDDING_MODEL")
+if os.environ.get("MIRAGE_RERANKER_MODEL"):
+    # Store reranker model for later use (get_reranker() will need to be updated)
+    RERANKER_MODEL = os.environ.get("MIRAGE_RERANKER_MODEL")
+else:
+    # Get default from config
+    try:
+        from mirage.core.config import load_config
+        _cfg = load_config()
+        RERANKER_MODEL = _cfg.get('reranker', {}).get('default', 'gemini_vlm')
+    except:
+        RERANKER_MODEL = 'gemini_vlm'
+if os.environ.get("MIRAGE_MAX_DEPTH"):
+    MAX_DEPTH = int(os.environ.get("MIRAGE_MAX_DEPTH"))
 if os.environ.get("MIRAGE_RUN_DEDUPLICATION") == "1":
     RUN_DEDUPLICATION = True
 if os.environ.get("MIRAGE_RUN_EVALUATION") == "1":

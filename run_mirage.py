@@ -164,6 +164,24 @@ Environment Variables:
         default=4,
         help="Number of parallel workers (default: 4)"
     )
+    parser.add_argument(
+        "--embedding-model",
+        type=str,
+        default="auto",
+        help="Embedding model to use: auto (default), qwen3_vl, nomic, or bge_m3"
+    )
+    parser.add_argument(
+        "--reranker-model",
+        type=str,
+        default="gemini_vlm",
+        help="Reranker model to use: gemini_vlm (default), qwen3_vl, or text_embedding"
+    )
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=2,
+        help="Maximum depth for multi-hop context retrieval (default: 2)"
+    )
     
     # Output options
     parser.add_argument(
@@ -207,6 +225,14 @@ def setup_environment(args):
         os.environ["MIRAGE_NUM_QA_PAIRS"] = str(args.num_qa_pairs)
     if args.max_workers:
         os.environ["MIRAGE_MAX_WORKERS"] = str(args.max_workers)
+    
+    # Set embedding and reranker models
+    if args.embedding_model:
+        os.environ["MIRAGE_EMBEDDING_MODEL"] = args.embedding_model
+    if args.reranker_model:
+        os.environ["MIRAGE_RERANKER_MODEL"] = args.reranker_model
+    if args.max_depth:
+        os.environ["MIRAGE_MAX_DEPTH"] = str(args.max_depth)
     
     # Set optional pipeline flags (off by default, enable with flags)
     if args.deduplication:
@@ -309,6 +335,9 @@ def main():
         "model": args.model,
         "num_qa_pairs": args.num_qa_pairs,
         "max_workers": args.max_workers,
+        "embedding_model": args.embedding_model,
+        "reranker_model": args.reranker_model,
+        "max_depth": args.max_depth,
     }
     config_path = os.path.join(args.output, "run_config.json")
     with open(config_path, "w") as f:

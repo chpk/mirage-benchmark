@@ -1912,6 +1912,23 @@ def run_pipeline():
     - QA generation (per chunk)
     """
     global _CHECKPOINT_MANAGER
+    global OUTPUT_DIR, OUTPUT_CHUNKS, OUTPUT_EMBEDDINGS_DIR, OUTPUT_QA_SUCCESSFUL
+    global OUTPUT_QA_FAILED, OUTPUT_MALFORMED_CHUNKS, OUTPUT_QA_DEDUPLICATED
+    global OUTPUT_CHUNKS_WITH_CONTEXT, OUTPUT_EVAL_REPORT
+    
+    # Update OUTPUT_DIR from environment variable (set by run_mirage.py)
+    # This ensures the --output argument is properly used
+    if os.environ.get("MIRAGE_OUTPUT_DIR"):
+        OUTPUT_DIR = os.environ.get("MIRAGE_OUTPUT_DIR")
+        # Recompute all derived output paths with correct OUTPUT_DIR
+        OUTPUT_CHUNKS = os.path.join(OUTPUT_DIR, "chunks.json")
+        OUTPUT_EMBEDDINGS_DIR = os.path.join(OUTPUT_DIR, "embeddings")
+        OUTPUT_QA_SUCCESSFUL = os.path.join(OUTPUT_DIR, "qa_multihop_pass.json")
+        OUTPUT_QA_FAILED = os.path.join(OUTPUT_DIR, "qa_multihop_fail.json")
+        OUTPUT_MALFORMED_CHUNKS = os.path.join(OUTPUT_DIR, "malformed_chunks.json")
+        OUTPUT_QA_DEDUPLICATED = os.path.join(OUTPUT_DIR, "qa_deduplicated.json")
+        OUTPUT_CHUNKS_WITH_CONTEXT = os.path.join(OUTPUT_DIR, "chunks_with_complete_context.json")
+        OUTPUT_EVAL_REPORT = os.path.join(OUTPUT_DIR, "subset_evaluation_report.json")
     
     setup_logging()
     

@@ -21,7 +21,7 @@ from typing import List, Dict, Tuple, Optional, Union
 from pathlib import Path
 from mirage.core.llm import call_vlm_interweaved, setup_logging, batch_call_vlm_interweaved
 from mirage.embeddings.models import NomicVLEmbed as NomicEmbedder
-from mirage.embeddings.rerankers_multimodal import MonoVLMReranker, VLMReranker, TextEmbeddingReranker, GeminiVLMReranker
+from mirage.embeddings.rerankers_multimodal import MonoVLMReranker, VLMReranker, TextEmbeddingReranker
 from sentence_transformers import SentenceTransformer
 import threading
 import os
@@ -374,25 +374,19 @@ def retrieve_and_rerank(query: str, model_name: str = None,
         print(f"   Text: {chunk['text'][:150]}...")
         print(f"   Has image: {chunk['image_path'] is not None}")
     
-    # Rerank using configured reranker (default: Gemini VLM)
+    # Rerank using MonoVLM (can swap with VLMReranker or TextEmbeddingReranker)
     print(f"\n{'='*60}")
-    print(f"Reranking {len(retrieved_chunks)} chunks to get top {rerank_top_k}...")
+    print(f"Reranking {len(retrieved_chunks)} chunks with MonoVLM to get top {rerank_top_k}...")
     print(f"{'='*60}")
     
-    # Use cached reranker if available (set by main.py's configure_retrieval_paths)
+    # Use cached reranker if available
     this_module = sys.modules[__name__]
     if hasattr(this_module, '_cached_reranker') and this_module._cached_reranker is not None:
         reranker = this_module._cached_reranker
-        print(f"✅ Using cached reranker")
+        print(f"✅ Using cached MonoVLM reranker")
     else:
-        # Get reranker from main.py (defaults to Gemini VLM)
-        try:
-            from mirage.main import get_reranker
-            reranker = get_reranker()
-            print(f"✅ Using Gemini VLM reranker (default)")
-        except Exception as e:
-            print(f"⚠️  Failed to load default reranker, falling back to MonoVLM: {e}")
-            reranker = MonoVLMReranker()
+        print(f"Loading MonoVLM reranker (this may take a moment)...")
+        reranker = MonoVLMReranker()
     
     # Use GPU lock if available for thread-safe access
     gpu_lock = getattr(this_module, '_gpu_lock', None)

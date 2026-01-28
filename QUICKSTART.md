@@ -1,140 +1,134 @@
 # MiRAGE Quick Start Guide
 
-## Step 1: Install MiRAGE
+## Installation
 
 ```bash
-pip install mirage-benchmark[pdf]
+pip install mirage-benchmark
 ```
 
-## Step 2: Set Up API Key
+## Basic Usage
 
+### 1. Set up API Key
+
+**For Gemini (default):**
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
-Get your API key from: https://makersuite.google.com/app/apikey
-
-## Step 3: Prepare Your Documents
-
+**For OpenAI:**
 ```bash
-mkdir -p input output
-# Copy your PDF files to the input directory
-cp /path/to/your/*.pdf input/
+export OPENAI_API_KEY="your-openai-api-key-here"
+export MIRAGE_BACKEND="OPENAI"  # Optional: defaults to GEMINI
 ```
 
-## Step 4: Run MiRAGE
+### 2. Run the Pipeline
 
-### Basic Usage (Generate 1 QA Pair)
+**Basic command:**
+```bash
+run_mirage --input data/sample --output results/my_dataset --num-qa-pairs 1
+```
 
+**With all options:**
 ```bash
 run_mirage \
-    --input input \
-    --output output \
-    --num-qa-pairs 1 \
-    --max-depth 2
+  --input data/sample \
+  --output results/my_dataset \
+  --num-qa-pairs 1 \
+  --backend gemini \
+  --api-key YOUR_API_KEY \
+  --max-depth 2 \
+  --embedding-model auto \
+  --reranker-model gemini_vlm
 ```
 
-### With All Options
+## Command-Line Options
 
+### Required Arguments
+- `--input, -i`: Input directory containing PDF/HTML documents
+- `--output, -o`: Output directory for generated QA dataset
+
+### Optional Arguments
+- `--num-qa-pairs`: Number of QA pairs to generate (default: 100)
+- `--backend, -b`: LLM backend: `gemini` (default), `openai`, or `ollama`
+- `--api-key, -k`: API key for the selected backend
+- `--max-depth`: Maximum depth for multi-hop retrieval (default: 2)
+- `--embedding-model`: Embedding model: `auto` (default), `qwen3_vl`, `nomic`, or `bge_m3`
+- `--reranker-model`: Reranker model: `gemini_vlm` (default), `monovlm`, or `text_embedding`
+- `--deduplication`: Enable QA deduplication (off by default)
+- `--evaluation`: Enable evaluation metrics (off by default)
+- `--verbose, -v`: Enable verbose output
+
+## Examples
+
+### Example 1: Generate 1 QA pair with default settings
 ```bash
-run_mirage \
-    --input input \
-    --output output \
-    --backend gemini \
-    --api-key YOUR_GEMINI_API_KEY \
-    --num-qa-pairs 1 \
-    --embedding-model auto \
-    --reranker-model gemini_vlm \
-    --max-depth 2 \
-    --max-workers 4 \
-    --verbose
+export GEMINI_API_KEY="your-key"
+run_mirage --input data/sample --output results/test --num-qa-pairs 1
 ```
 
-### With Deduplication and Evaluation
-
+### Example 2: Use OpenAI backend
 ```bash
-run_mirage \
-    --input input \
-    --output output \
-    --num-qa-pairs 10 \
-    --deduplication \
-    --evaluation
+export OPENAI_API_KEY="your-key"
+run_mirage --input data/documents --output results/openai_test \
+  --backend openai --num-qa-pairs 10
 ```
 
-## Step 5: View Results
-
+### Example 3: Generate with deduplication and evaluation
 ```bash
-# List generated files
-ls -lh output/
-
-# Open visualization (auto-generated for first QA pair)
-open output/multihop_visualization.html  # macOS
-# xdg-open output/multihop_visualization.html  # Linux
-# start output/multihop_visualization.html  # Windows
+run_mirage --input data/documents --output results/full \
+  --num-qa-pairs 50 --deduplication --evaluation
 ```
 
-## Complete Example (Copy-Paste Ready)
-
+### Example 4: Custom embedding and reranker models
 ```bash
-# 1. Install
-pip install mirage-benchmark[pdf]
-
-# 2. Set API key
-export GEMINI_API_KEY="your-gemini-api-key-here"
-
-# 3. Create directories
-mkdir -p input output
-
-# 4. Add your PDFs to input/ directory
-# cp /path/to/your/*.pdf input/
-
-# 5. Run MiRAGE
-run_mirage \
-    --input input \
-    --output output \
-    --num-qa-pairs 1 \
-    --max-depth 2 \
-    --verbose
-
-# 6. View results
-ls -lh output/
-open output/multihop_visualization.html
-```
-
-## Command Reference
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--input`, `-i` | Input directory with documents | Required |
-| `--output`, `-o` | Output directory for results | Required |
-| `--backend`, `-b` | Backend: gemini, openai, ollama | gemini |
-| `--api-key`, `-k` | API key (or use env var) | From env |
-| `--num-qa-pairs` | Number of QA pairs to generate | 100 |
-| `--embedding-model` | Embedding model: auto, qwen3_vl, nomic, bge_m3 | auto |
-| `--reranker-model` | Reranker: gemini_vlm, qwen3_vl, text_embedding | gemini_vlm |
-| `--max-depth` | Max retrieval depth | 2 |
-| `--max-workers` | Parallel workers | 4 |
-| `--deduplication` | Enable deduplication | Off |
-| `--evaluation` | Enable evaluation metrics | Off |
-| `--verbose`, `-v` | Verbose output | Off |
-
-## Troubleshooting
-
-```bash
-# Check installation
-pip show mirage-benchmark
-
-# Run preflight checks
-run_mirage --preflight
-
-# Check API key
-echo $GEMINI_API_KEY
+run_mirage --input data/documents --output results/custom \
+  --num-qa-pairs 20 \
+  --embedding-model nomic \
+  --reranker-model monovlm
 ```
 
 ## Output Files
 
-After running, you'll find in `output/`:
-- `chunks.json` - Semantic chunks from your documents
-- `qa_multihop_pass.json` - Generated QA pairs
-- `multihop_visualization.html` - Interactive visualization (auto-generated)
-- `run_config.json` - Run configuration
+After running, you'll find in the output directory:
+- `chunks.json`: Semantic chunks from your documents
+- `qa_multihop_pass.json`: Successfully generated QA pairs
+- `qa_multihop_fail.json`: Failed QA generation attempts
+- `multihop_visualization.html`: Interactive visualization of QA pairs
+- `embeddings/`: FAISS index and embeddings
+- `markdown/`: Converted markdown files and images
+
+## Troubleshooting
+
+### Command not found
+If `run_mirage` command is not found:
+```bash
+# Check if package is installed
+pip show mirage-benchmark
+
+# Reinstall if needed
+pip install --upgrade mirage-benchmark
+```
+
+### API Key Issues
+```bash
+# Verify API key is set
+echo $GEMINI_API_KEY  # or $OPENAI_API_KEY
+
+# Set it if missing
+export GEMINI_API_KEY="your-key"
+```
+
+### Preflight Checks
+Run preflight checks to verify setup:
+```bash
+run_mirage --preflight
+```
+
+## Auto-Selected Reranker
+
+The reranker is automatically selected based on your backend/API keys:
+- **Gemini backend/key** → Uses Gemini VLM reranker (fast, API-based)
+- **OpenAI backend** → Uses Gemini VLM if Gemini key available, else MonoVLM
+- **No API keys** → Falls back to MonoVLM (local model, slower)
+
+You can override with `--reranker-model` flag.

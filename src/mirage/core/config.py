@@ -119,7 +119,7 @@ def get_api_key(backend_name: str = None) -> str:
         with open(api_key_path, 'r') as f:
             return f.read().strip()
     except FileNotFoundError:
-        print(f"⚠️ API key file not found: {api_key_path}")
+        print(f"[WARN] API key file not found: {api_key_path}")
         return ""
 
 
@@ -267,7 +267,7 @@ def print_config_summary():
     qa_gen = get_qa_generation_config()
     
     print("=" * 60)
-    print("📋 CONFIGURATION SUMMARY")
+    print("CONFIGURATION SUMMARY")
     print("=" * 60)
     print(f"Backend: {backend['name']}")
     print(f"  LLM Model: {backend.get('llm_model', 'N/A')}")

@@ -99,7 +99,7 @@ class CheckpointManager:
         if file_stem not in self._markdown_state['completed_files']:
             self._markdown_state['completed_files'].append(file_stem)
         self._save(self.markdown_checkpoint, self._markdown_state)
-        print(f"   💾 Checkpoint: Markdown saved for {file_stem}")
+        print(f"   [SAVE] Checkpoint: Markdown saved for {file_stem}")
     
     def mark_markdown_failed(self, file_stem: str, error: str):
         """Mark a markdown conversion as failed."""
@@ -128,7 +128,7 @@ class CheckpointManager:
             self._chunks_state['completed_files'].append(file_stem)
         self._chunks_state['chunks_by_file'][file_stem] = chunks
         self._save(self.chunks_checkpoint, self._chunks_state)
-        print(f"   💾 Checkpoint: {len(chunks)} chunks saved for {file_stem}")
+        print(f"   [SAVE] Checkpoint: {len(chunks)} chunks saved for {file_stem}")
     
     def get_all_file_chunks(self) -> Dict[str, List[Dict]]:
         """Get all chunks organized by file."""
@@ -138,7 +138,7 @@ class CheckpointManager:
         """Mark that final renumbered chunks have been saved."""
         self._chunks_state['final_chunks_saved'] = True
         self._save(self.chunks_checkpoint, self._chunks_state)
-        print(f"   💾 Checkpoint: Final chunks file saved")
+        print(f"   [SAVE] Checkpoint: Final chunks file saved")
     
     # =========================================================================
     # CONTEXT CHECKPOINTS
@@ -195,7 +195,7 @@ class CheckpointManager:
         
         success_count = len(successful)
         fail_count = len(failed)
-        print(f"   💾 Checkpoint: QA saved for chunk {chunk_id} ({success_count} pass, {fail_count} fail)")
+        print(f"   [SAVE] Checkpoint: QA saved for chunk {chunk_id} ({success_count} pass, {fail_count} fail)")
     
     def get_accumulated_qa(self) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """Get all accumulated QA results.
@@ -242,7 +242,7 @@ class CheckpointManager:
         """Print checkpoint status."""
         summary = self.get_summary()
         
-        print("\n📋 CHECKPOINT STATUS")
+        print("\nCHECKPOINT STATUS")
         print("=" * 60)
         
         md = summary['markdown']
@@ -251,7 +251,7 @@ class CheckpointManager:
         
         ch = summary['chunks']
         if ch['files_chunked'] > 0:
-            status = "✅ final saved" if ch['final_saved'] else "⏳ in progress"
+            status = "[OK] final saved" if ch['final_saved'] else "[...] in progress"
             print(f"   Chunks:    {ch['files_chunked']} files chunked ({status})")
         
         ctx = summary['context']
@@ -281,4 +281,4 @@ class CheckpointManager:
         self._context_state = {'completed_chunk_ids': [], 'contexts': {}, 'last_updated': None}
         self._qa_state = {'completed_chunk_ids': [], 'successful_qa': [], 'failed_qa': [], 'chunks_with_context': [], 'last_updated': None}
         
-        print("🗑️  All checkpoints cleared")
+        print("All checkpoints cleared")

@@ -36,7 +36,7 @@ def call_ai_service(prompt: str, chunks: List[Dict]) -> str:
 
 def check_chunk_relevance(chunk_content: str, expert_persona: str, domain: str) -> bool:
     """Check if a chunk is relevant to the expert role and domain. Returns True if relevant, False otherwise."""
-    print(f"🔍 Checking chunk relevance for {expert_persona} in {domain}...")
+    print(f"Checking chunk relevance for {expert_persona} in {domain}...")
     
     # Format prompt - domain should never be None at this point
     domain_context = domain if domain else "unspecified domain"
@@ -68,9 +68,9 @@ def check_chunk_relevance(chunk_content: str, expert_persona: str, domain: str) 
         is_relevant = "RELEVANT" in response_upper and "NOT_RELEVANT" not in response_upper
     
     if is_relevant:
-        print(f"  ✅ Chunk is RELEVANT")
+        print(f"  [OK] Chunk is RELEVANT")
     else:
-        print(f"  ❌ Chunk is NOT_RELEVANT")
+        print(f"  [SKIP] Chunk is NOT_RELEVANT")
     
     return is_relevant
 
@@ -83,7 +83,7 @@ def generate_qa(chunks: List[Dict], expert_persona: str, domain: str) -> tuple:
         - related_keywords: String describing keyword relationships (bridge keywords)
         - chunk_count: Number of chunks used in generation
     """
-    print(f"❓ Generating Q&A pairs from {len(chunks)} context chunks...")
+    print(f"Generating Q&A pairs from {len(chunks)} context chunks...")
     
     # Format prompt with or without domain
     if domain:
@@ -251,7 +251,7 @@ def generate_qa(chunks: List[Dict], expert_persona: str, domain: str) -> tuple:
                         })
             
             if not qa_pairs:
-                print("⚠️ Could not parse Q&A from response")
+                print("[WARN] Could not parse Q&A from response")
                 qa_pairs.append({
                     "question": response,
                     "answer": "",
@@ -259,7 +259,7 @@ def generate_qa(chunks: List[Dict], expert_persona: str, domain: str) -> tuple:
                     "difficulty_score": "0"
                 })
         
-        print(f"✅ Generated {len(qa_pairs)} Q&A pair(s)")
+        print(f"[OK] Generated {len(qa_pairs)} Q&A pair(s)")
         if qa_metadata['keywords_per_chunk']:
             print(f"   Keywords extracted: {len(qa_metadata['keywords_per_chunk'])} chunks")
         if qa_metadata['related_keywords']:
@@ -267,7 +267,7 @@ def generate_qa(chunks: List[Dict], expert_persona: str, domain: str) -> tuple:
         return qa_pairs, qa_metadata
         
     except Exception as e:
-        print(f"⚠️ Error parsing Q&A: {e}")
+        print(f"[WARN] Error parsing Q&A: {e}")
         import traceback
         print(traceback.format_exc())
         return [{
@@ -281,7 +281,7 @@ def select_qa_pairs(qa_pairs: list, chunks: List[Dict], expert_persona: str, dom
     """Select/filter Q&A pairs using the selection agent. Returns (selected, rejected).
     Uses batch processing when multiple QA pairs need to be evaluated.
     """
-    print(f"🔍 Selecting Q&A pairs ({len(qa_pairs)} candidates)...")
+    print(f"Selecting Q&A pairs ({len(qa_pairs)} candidates)...")
     
     if not qa_pairs:
         return [], []
@@ -312,7 +312,7 @@ def select_qa_pairs(qa_pairs: list, chunks: List[Dict], expert_persona: str, dom
     
     # Execute batch or sequential based on count
     if len(requests) > 1:
-        print(f"  ⚡ Batch evaluating {len(requests)} QA pairs...")
+        print(f"  Batch evaluating {len(requests)} QA pairs...")
         responses = batch_call_vlm_interweaved(requests, show_progress=False)
     else:
         responses = [call_ai_service(requests[0][0], chunks)]
@@ -361,27 +361,27 @@ def select_qa_pairs(qa_pairs: list, chunks: List[Dict], expert_persona: str, dom
                 
                 if status == "SELECTED":
                     selected_pairs.append(qa_pair)
-                    print(f"    ✅ Q{idx} SELECTED (R:{relevance}/D:{difficulty})")
+                    print(f"    [OK] Q{idx} SELECTED (R:{relevance}/D:{difficulty})")
                 else:
                     rejected_pairs.append(qa_pair)
-                    print(f"    ❌ Q{idx} REJECTED: {reason[:60]}...")
+                    print(f"    [FAIL] Q{idx} REJECTED: {reason[:60]}...")
             else:
                 qa_pair["selection_status"] = "ERROR"
                 qa_pair["selection_reason"] = f"API Error: {response}"
                 rejected_pairs.append(qa_pair)
                 
         except Exception as e:
-            print(f"    ⚠️ Error parsing selection response for Q{idx}: {e}")
+            print(f"    [WARN] Error parsing selection response for Q{idx}: {e}")
             qa_pair["selection_status"] = "ERROR"
             qa_pair["selection_reason"] = f"Parsing error: {str(e)}"
             rejected_pairs.append(qa_pair)
     
-    print(f"✅ Selection complete: {len(selected_pairs)} selected, {len(rejected_pairs)} rejected")
+    print(f"[OK] Selection complete: {len(selected_pairs)} selected, {len(rejected_pairs)} rejected")
     return selected_pairs, rejected_pairs
 
 def verify_qa(chunks: List[Dict], question: str, answer: str, expert_persona: str, domain: str) -> str:
     """Verify if the question requires the content to be answered"""
-    print("🔍 Verifying Q&A pair...")
+    print("Verifying Q&A pair...")
     
     # Format prompt with or without domain
     if domain:
@@ -437,7 +437,7 @@ def batch_verify_qa(chunks: List[Dict], qa_pairs: List[Dict], expert_persona: st
     
     # Execute batch
     if len(requests) > 1:
-        print(f"  ⚡ Batch verifying {len(requests)} QA pairs...")
+        print(f"  Batch verifying {len(requests)} QA pairs...")
         responses = batch_call_vlm_interweaved(requests, show_progress=False)
     else:
         responses = [call_ai_service(requests[0][0], chunks)]
@@ -454,7 +454,7 @@ def process_chunk_for_qa(chunk_data: Dict, expert_persona: str, domain: str) -> 
     print(f"{'='*80}")
     
     # Stage 1: Build complete context using multi-hop retrieval
-    print("\n🔄 Stage 1: Building complete context...")
+    print("\nStage 1: Building complete context...")
     context_result = build_complete_context(
         initial_chunk=chunk_data,
         max_depth=3,
@@ -474,20 +474,20 @@ def process_chunk_for_qa(chunk_data: Dict, expert_persona: str, domain: str) -> 
     print(f"Multihop context: {len(context_chunks)} chunks (original + retrieved)")
     
     # Stage 2: Use pre-extracted expert role and domain (from BERTopic analysis)
-    print(f"\n✅ Using expert role: {expert_persona}")
-    print(f"✅ Using domain: {domain}")
+    print(f"\n[OK] Using expert role: {expert_persona}")
+    print(f"[OK] Using domain: {domain}")
     
     # Stage 3: Generate Q&A pairs from multihop context
-    print(f"\n🔄 Stage 3: Generating Q&A pairs from multihop context ({len(context_chunks)} chunks)...")
+    print(f"\nStage 3: Generating Q&A pairs from multihop context ({len(context_chunks)} chunks)...")
     qa_pairs, qa_metadata = generate_qa(context_chunks, expert_persona, domain)
     
     # Stage 3.5: Select Q&A pairs
-    print("\n🔄 Stage 3.5: Selecting Q&A pairs...")
+    print("\nStage 3.5: Selecting Q&A pairs...")
     selected_pairs, rejected_pairs = select_qa_pairs(qa_pairs, context_chunks, expert_persona, domain)
     
     # Stage 4: Verify selected Q&A pairs - BATCH PROCESSING
     verified_qa_pairs = []
-    print(f"\n🔄 Stage 4: Verifying {len(selected_pairs)} selected Q&A pair(s)...")
+    print(f"\nStage 4: Verifying {len(selected_pairs)} selected Q&A pair(s)...")
     
     if selected_pairs:
         # Use batch verification
@@ -624,7 +624,7 @@ def correct_failed_qa(chunks: List[Dict], failed_qa_pairs: List[Dict],
     if not failed_qa_pairs:
         return []
     
-    print(f"🔧 Correcting {len(failed_qa_pairs)} failed Q&A pair(s)...")
+    print(f"Correcting {len(failed_qa_pairs)} failed Q&A pair(s)...")
     
     # Format the failed QA feedback section
     failed_qa_feedback_parts = []
@@ -674,7 +674,7 @@ def correct_failed_qa(chunks: List[Dict], failed_qa_pairs: List[Dict],
         
         # Check for empty response (no valid correction possible)
         if not response.strip() or response.strip() == tuple_delimiter + "START" + tuple_delimiter:
-            print("  ⚠️ No correction possible - content doesn't support the original topic")
+            print("  [WARN] No correction possible - content doesn't support the original topic")
             return []
         
         # Split by NEXT delimiter for multiple QA pairs
@@ -707,13 +707,13 @@ def correct_failed_qa(chunks: List[Dict], failed_qa_pairs: List[Dict],
             if qa_dict.get("question") and qa_dict.get("answer"):
                 qa_dict["correction_status"] = "CORRECTED"
                 corrected_pairs.append(qa_dict)
-                print(f"  ✅ Corrected: {qa_dict['question'][:60]}...")
+                print(f"  [OK] Corrected: {qa_dict['question'][:60]}...")
     
     except Exception as e:
         logging.error(f"Error parsing corrected QA response: {e}")
-        print(f"  ❌ Error parsing correction response: {e}")
+        print(f"  [ERROR] Error parsing correction response: {e}")
     
-    print(f"  📊 Generated {len(corrected_pairs)} corrected Q&A pair(s)")
+    print(f"  Generated {len(corrected_pairs)} corrected Q&A pair(s)")
     return corrected_pairs
 
 
@@ -721,16 +721,16 @@ if __name__ == "__main__":
     setup_logging()
     
     # Load chunks
-    print(f"📂 Loading chunks from {INPUT_CHUNKS_FILE}...")
+    print(f"Loading chunks from {INPUT_CHUNKS_FILE}...")
     with open(INPUT_CHUNKS_FILE, 'r') as f:
         chunks = json.load(f)
     
     # Limit to first N chunks if MAX_CHUNKS is set
     if MAX_CHUNKS is not None:
         chunks = chunks[:MAX_CHUNKS]
-        print(f"📊 Processing {len(chunks)} chunks (limited to {MAX_CHUNKS} for testing)...")
+        print(f"Processing {len(chunks)} chunks (limited to {MAX_CHUNKS} for testing)...")
     else:
-        print(f"📊 Processing all {len(chunks)} chunks...")
+        print(f"Processing all {len(chunks)} chunks...")
     
     # Extract domain and expert role once for all chunks using BERTopic
     print(f"\n{'='*80}")
@@ -744,7 +744,7 @@ if __name__ == "__main__":
         config_persona = domain_config.get('expert_persona')
         
         if config_domain and config_persona:
-            print(f"✅ Using domain and expert persona from config.yaml")
+            print(f"[OK] Using domain and expert persona from config.yaml")
             domain, expert_persona = config_domain, config_persona
             save_domain_expert_to_env(domain, expert_persona)
     except ImportError:
@@ -758,12 +758,12 @@ if __name__ == "__main__":
     
     # Priority 3: Auto-detect using BERTopic
     if not domain or not expert_persona:
-        print("🔍 Auto-detecting domain and expert persona from corpus...")
+        print("Auto-detecting domain and expert persona from corpus...")
         domain, expert_persona = fetch_domain_and_role(INPUT_CHUNKS_FILE)
         # Note: fetch_domain_and_role already saves to environment variables
     
-    print(f"✅ Domain: {domain}")
-    print(f"✅ Expert Role: {expert_persona}")
+    print(f"[OK] Domain: {domain}")
+    print(f"[OK] Expert Role: {expert_persona}")
     print(f"{'='*80}\n")
     
     # Initialize result containers
@@ -775,7 +775,7 @@ if __name__ == "__main__":
     for i, chunk in tqdm(enumerate(chunks, 1), total=len(chunks), desc="Processing chunks"):
         tqdm.write(f"\n{'='*80}")
         tqdm.write(f"Processing Chunk {i}/{len(chunks)}")
-        tqdm.write(f"Pipeline: Multihop Context → QA Generation → Selection → Verification")
+        tqdm.write(f"Pipeline: Multihop Context -> QA Generation -> Selection -> Verification")
         tqdm.write(f"{'='*80}")
         
         try:
@@ -790,7 +790,7 @@ if __name__ == "__main__":
                 chunk_id = str(i)
             
             # Stage 0: Check chunk relevance
-            print(f"\n🔄 Stage 0: Checking chunk relevance...")
+            print(f"\nStage 0: Checking chunk relevance...")
             is_relevant = check_chunk_relevance(chunk_content, expert_persona, domain)
             
             if not is_relevant:
@@ -799,7 +799,7 @@ if __name__ == "__main__":
                     "chunk_id": chunk_id,
                     "source_document": source_document
                 })
-                tqdm.write(f"⏭️  Chunk {i} is NOT_RELEVANT - skipping processing")
+                tqdm.write(f"[SKIP] Chunk {i} is NOT_RELEVANT - skipping processing")
                 continue
             
             # Prepare chunk data
@@ -901,12 +901,12 @@ if __name__ == "__main__":
             
             total_qa = len(result.get("selected_qa_pairs", [])) + len(result.get("rejected_qa_pairs", []))
             if successful_count > 0:
-                tqdm.write(f"✅ {successful_count}/{total_qa} Q&A pair(s) passed all stages")
+                tqdm.write(f"[OK] {successful_count}/{total_qa} Q&A pair(s) passed all stages")
             else:
-                tqdm.write(f"⚠️ 0/{total_qa} Q&A pairs passed all stages")
+                tqdm.write(f"[WARN] 0/{total_qa} Q&A pairs passed all stages")
                 
         except Exception as e:
-            error_msg = f"❌ Error processing chunk {i}: {e}"
+            error_msg = f"[ERROR] Error processing chunk {i}: {e}"
             tqdm.write(error_msg)
             logging.error(error_msg)
             
@@ -923,27 +923,27 @@ if __name__ == "__main__":
     
     # Save results
     print(f"\n{'='*80}")
-    print("📁 Saving results...")
+    print("Saving results...")
     print(f"{'='*80}")
     
     if successful_qa_pairs:
         with open(OUTPUT_SUCCESSFUL, 'w', encoding='utf-8') as f:
             json.dump(successful_qa_pairs, f, indent=2, ensure_ascii=False)
-        print(f"✅ Successful QA pairs: {len(successful_qa_pairs)} saved to {OUTPUT_SUCCESSFUL}")
+        print(f"[OK] Successful QA pairs: {len(successful_qa_pairs)} saved to {OUTPUT_SUCCESSFUL}")
     
     if failed_qa_pairs:
         with open(OUTPUT_FAILED, 'w', encoding='utf-8') as f:
             json.dump(failed_qa_pairs, f, indent=2, ensure_ascii=False)
-        print(f"⚠️ Failed QA pairs: {len(failed_qa_pairs)} saved to {OUTPUT_FAILED}")
+        print(f"[WARN] Failed QA pairs: {len(failed_qa_pairs)} saved to {OUTPUT_FAILED}")
     
     if irrelevant_chunks:
         with open(OUTPUT_IRRELEVANT, 'w', encoding='utf-8') as f:
             json.dump(irrelevant_chunks, f, indent=2, ensure_ascii=False)
-        print(f"⏭️  Irrelevant chunks: {len(irrelevant_chunks)} saved to {OUTPUT_IRRELEVANT}")
+        print(f"[SKIP] Irrelevant chunks: {len(irrelevant_chunks)} saved to {OUTPUT_IRRELEVANT}")
     
     # Summary
     print(f"\n{'='*80}")
-    print("📊 SUMMARY")
+    print("SUMMARY")
     print(f"{'='*80}")
     print(f"Total chunks processed: {len(chunks)}")
     print(f"Relevant chunks processed: {len(chunks) - len(irrelevant_chunks)}")
@@ -964,7 +964,7 @@ if __name__ == "__main__":
             elif len(chunks_added) > 1:
                 multiple_chunk_count += 1
     
-    print(f"\n📊 QA STATS")
+    print(f"\nQA STATS")
     print(f"{'='*80}")
     print(f"Number of QA pairs in qa_multihop_fail: {len(failed_qa_pairs)}")
     print(f"Number of QA pairs with single chunk in qa_multihop_pass: {single_chunk_count}")

@@ -58,7 +58,7 @@ class MMR5Reranker(BaseReranker):
             from reranker import QueryReranker  # type: ignore
             self.reranker = QueryReranker(model_name)
             self.use_official_package = True
-            print(f"✅ MM-R5 loaded via official package")
+            print(f"[OK] MM-R5 loaded via official package")
         except ImportError:
             # Fallback to direct implementation using official code
             from transformers import Qwen2_5_VLProcessor, Qwen2_5_VLForConditionalGeneration
@@ -68,7 +68,7 @@ class MMR5Reranker(BaseReranker):
             if self._flash_attn_available():
                 attn_kwargs["attn_implementation"] = "flash_attention_2"
             else:
-                print("⚠️  flash_attn not available. Falling back to default attention implementation.")
+                print("[WARN] flash_attn not available. Falling back to default attention implementation.")
             
             # Load without device_map="auto" to avoid meta tensor issues in parallel processing
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -81,7 +81,7 @@ class MMR5Reranker(BaseReranker):
             
             self.processor = Qwen2_5_VLProcessor.from_pretrained(model_name)
             self.use_official_package = False
-            print(f"✅ MM-R5 loaded via direct implementation")
+            print(f"[OK] MM-R5 loaded via direct implementation")
     
     def rerank(self, query: str, image_paths: List[str], top_k: int = 10) -> List[int]:
         """Rerank images based on query relevance"""
@@ -183,10 +183,10 @@ class MMR5Reranker(BaseReranker):
                         
                 except Exception as e:
                     predicted_order = [i for i in range(len(image_paths))]
-                    print(f"⚠️  Parsing error: {str(e)}, output text: {output_text[:200]}...")
+                    print(f"[WARN] Parsing error: {str(e)}, output text: {output_text[:200]}...")
             else:
                 predicted_order = [i for i in range(len(image_paths))]
-                print(f"⚠️  Could not parse ranking from output: {output_text[:200]}...")
+                print(f"[WARN] Could not parse ranking from output: {output_text[:200]}...")
         
         return predicted_order[:top_k]
     
@@ -230,7 +230,7 @@ class Florence2Reranker(BaseReranker):
                     device_map="auto"  # Required for BitsAndBytes quantization
                 ).eval()
             except Exception as e:
-                print(f"⚠️  Quantization failed ({e}), loading without quantization...")
+                print(f"[WARN] Quantization failed ({e}), loading without quantization...")
                 self.model = AutoModelForCausalLM.from_pretrained(
                     model_name,
                     torch_dtype=self.torch_dtype,
@@ -246,7 +246,7 @@ class Florence2Reranker(BaseReranker):
             ).to(self.device).eval()
         
         self.processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
-        print(f"✅ Florence-2 loaded on {self.device}")
+        print(f"[OK] Florence-2 loaded on {self.device}")
     
     def _score_image(self, query: str, image_path: str) -> float:
         """Score a single image based on query relevance"""
@@ -286,7 +286,7 @@ class Florence2Reranker(BaseReranker):
             return score
             
         except Exception as e:
-            print(f"⚠️  Scoring failed for {image_path}: {e}")
+            print(f"[WARN] Scoring failed for {image_path}: {e}")
             return 0.0
     
     def rerank(self, query: str, image_paths: List[str], top_k: int = 10) -> List[int]:
@@ -302,7 +302,7 @@ class Florence2Reranker(BaseReranker):
             return ranked_indices[:top_k]
             
         except Exception as e:
-            print(f"⚠️  Reranking failed: {e}")
+            print(f"[WARN] Reranking failed: {e}")
             return list(range(min(top_k, len(image_paths))))
 
 class VLMReranker(ChunkReranker):
@@ -314,7 +314,7 @@ class VLMReranker(ChunkReranker):
         
         self.call_vlm_multi = call_vlm_with_multiple_images
         self.rerank_prompt = PROMPTS["rerank_vlm"]
-        print("✅ VLM Reranker initialized")
+        print("[OK] VLM Reranker initialized")
     
     def rerank(self, query: str, chunks: List[Dict[str, str]], top_k: int = 1) -> List[Tuple[int, float, Dict[str, str]]]:
         """
@@ -394,7 +394,7 @@ Chunks to rank:
             return result
             
         except Exception as e:
-            print(f"⚠️  Reranking failed: {e}")
+            print(f"[WARN] Reranking failed: {e}")
             import traceback
             traceback.print_exc()
             # Return original order with default scores
@@ -428,11 +428,11 @@ Chunks to rank:
             missing = set(range(num_chunks)) - seen_indices
             for idx in missing:
                 rankings.append((idx, 0.0))
-            print(f"⚠️  Parsed {len(seen_indices)}/{num_chunks} chunks from response")
+            print(f"[WARN] Parsed {len(seen_indices)}/{num_chunks} chunks from response")
             if len(seen_indices) == 0:
                 # Debug: print response when parsing completely fails
-                print(f"🔍 Debug - VLM Response (first 500 chars):\n{response[:500]}")
-                print(f"🔍 Debug - VLM Response (last 500 chars):\n{response[-500:]}")
+                print(f"Debug - VLM Response (first 500 chars):\n{response[:500]}")
+                print(f"Debug - VLM Response (last 500 chars):\n{response[-500:]}")
         
         # Sort by relevance score (highest first)
         rankings.sort(key=lambda x: x[1], reverse=True)
@@ -478,7 +478,7 @@ class MonoVLMReranker(ChunkReranker):
         if self.true_token_id is None or self.false_token_id is None:
             raise ValueError("Tokenizer missing True/False tokens required for MonoVLM scoring.")
         
-        print(f"✅ MonoVLM loaded")
+        print(f"[OK] MonoVLM loaded")
     
     def _build_prompt(self, query: str, chunk_text: str) -> str:
         chunk_text = chunk_text.strip() if chunk_text else "[No text provided]"
@@ -497,7 +497,7 @@ class MonoVLMReranker(ChunkReranker):
                 with Image.open(image_path) as img:
                     image = img.convert("RGB")
         except Exception as img_err:
-            print(f"⚠️  Failed to load image {image_path}: {img_err}")
+            print(f"[WARN] Failed to load image {image_path}: {img_err}")
             image = None
         
         prompt = self._build_prompt(query, chunk.get('text', ''))
@@ -542,7 +542,7 @@ class MonoVLMReranker(ChunkReranker):
             return relevance[0, 0].item()
         
         except Exception as e:
-            print(f"⚠️  MonoVLM scoring failed: {e}")
+            print(f"[WARN] MonoVLM scoring failed: {e}")
             return 0.0
     
     def rerank(self, query: str, chunks: List[Dict[str, str]], top_k: int = 1) -> List[Tuple[int, float, Dict[str, str]]]:
@@ -583,7 +583,7 @@ class TextEmbeddingReranker(ChunkReranker):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         self.model = SentenceTransformer(model_name, device=self.device)
-        print(f"✅ Text embedding model loaded on {self.device}")
+        print(f"[OK] Text embedding model loaded on {self.device}")
         
         # For generating image descriptions (reuse VLM)
         from mirage.core.llm import call_vlm_simple
@@ -596,7 +596,7 @@ class TextEmbeddingReranker(ChunkReranker):
         try:
             return self.call_vlm(self.desc_prompt, image_path)
         except Exception as e:
-            print(f"⚠️  Image description failed for {image_path}: {e}")
+            print(f"[WARN] Image description failed for {image_path}: {e}")
             return "[Image description unavailable]"
     
     def rerank(self, query: str, chunks: List[Dict[str, str]], top_k: int = 1) -> List[Tuple[int, float, Dict[str, str]]]:
@@ -648,7 +648,7 @@ class TextEmbeddingReranker(ChunkReranker):
             return results
             
         except Exception as e:
-            print(f"⚠️  Reranking failed: {e}")
+            print(f"[WARN] Reranking failed: {e}")
             return [(i, 1.0, chunks[i]) for i in range(min(top_k, len(chunks)))]
 
 
@@ -684,7 +684,7 @@ class GeminiVLMReranker(ChunkReranker):
         self.timeout = timeout
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         
-        print(f"✅ Gemini VLM Reranker initialized (model: {model_name})")
+        print(f"[OK] Gemini VLM Reranker initialized (model: {model_name})")
     
     def _encode_image(self, image_path: str) -> Tuple[str, str]:
         """Encode image to base64 with mime type"""
@@ -733,7 +733,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0."""
                     }
                 })
             except Exception as e:
-                print(f"⚠️ Could not encode image {image_path}: {e}")
+                print(f"[WARN] Could not encode image {image_path}: {e}")
         
         payload = {
             "contents": [{"parts": parts}],
@@ -764,7 +764,7 @@ Respond with ONLY a decimal number between 0.0 and 1.0."""
                 return 0.5
                 
         except Exception as e:
-            print(f"⚠️ Gemini reranking failed: {e}")
+            print(f"[WARN] Gemini reranking failed: {e}")
             return 0.0
     
     def rerank(self, query: str, chunks: List[Dict[str, str]], top_k: int = 1) -> List[Tuple[int, float, Dict[str, str]]]:
@@ -838,11 +838,11 @@ if __name__ == "__main__":
                     print(f"   Has image: {Path(chunk['image_path']).name}")
                 else:
                     print(f"   Text-only chunk")
-            print("\n✅ VLM Reranker test completed!")
+            print("\n[OK] VLM Reranker test completed!")
         else:
-            print("⚠️  No valid test chunks found.")
+            print("[WARN] No valid test chunks found.")
     except Exception as e:
-        print(f"❌ VLM Reranker test failed: {e}")
+        print(f"[ERROR] VLM Reranker test failed: {e}")
         import traceback
         traceback.print_exc()
     
@@ -864,11 +864,11 @@ if __name__ == "__main__":
                     print(f"   Has image: {Path(chunk['image_path']).name}")
                 else:
                     print(f"   Text-only chunk")
-            print("\n✅ MonoVLM Reranker test completed!")
+            print("\n[OK] MonoVLM Reranker test completed!")
         else:
-            print("⚠️  No valid test chunks found.")
+            print("[WARN] No valid test chunks found.")
     except Exception as e:
-        print(f"⚠️  MonoVLM Reranker test skipped: {e}")
+        print(f"[WARN] MonoVLM Reranker test skipped: {e}")
         import traceback
         traceback.print_exc()
     
@@ -890,11 +890,11 @@ if __name__ == "__main__":
                     print(f"   Has image: {Path(chunk['image_path']).name}")
                 else:
                     print(f"   Text-only chunk")
-            print("\n✅ Text Embedding Reranker test completed!")
+            print("\n[OK] Text Embedding Reranker test completed!")
         else:
-            print("⚠️  No valid test chunks found.")
+            print("[WARN] No valid test chunks found.")
     except Exception as e:
-        print(f"⚠️  Text Embedding Reranker test skipped: {e}")
+        print(f"[WARN] Text Embedding Reranker test skipped: {e}")
         import traceback
         traceback.print_exc()
     

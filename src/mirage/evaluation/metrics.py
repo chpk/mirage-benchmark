@@ -23,7 +23,7 @@ try:
     )
     from datasets import Dataset
     RAGAS_AVAILABLE = True
-    print("✅ RAGAS metrics loaded successfully")
+    print("[OK] RAGAS metrics loaded successfully")
 except ImportError as e:
     RAGAS_AVAILABLE = False
     print(f"Warning: 'ragas' or 'datasets' not installed. Error: {e}")
@@ -584,7 +584,7 @@ class MultimodalFrameworkEvaluator:
             prompt = prompt_without_template.replace("{question}", item['question'])
             prompts_without.append(prompt)
         
-        print(f"  ⚡ Phase 1: Batch answering {len(prompts_without)} questions without context...")
+        print(f"  Phase 1: Batch answering {len(prompts_without)} questions without context...")
         answers_without = batch_call_llm(prompts_without, show_progress=False)
         
         # Phase 2: Batch verification calls for non-refused answers
@@ -618,7 +618,7 @@ class MultimodalFrameworkEvaluator:
                 verify_indices.append(i)
         
         if verify_prompts:
-            print(f"  ⚡ Phase 2: Batch verifying {len(verify_prompts)} answers...")
+            print(f"  Phase 2: Batch verifying {len(verify_prompts)} answers...")
             verify_responses = batch_call_llm(verify_prompts, show_progress=False)
             
             for idx, verify_content in zip(verify_indices, verify_responses):
@@ -681,7 +681,7 @@ class MultimodalFrameworkEvaluator:
             ).replace("{question}", item['question']).replace("{answer}", item['answer'])
             prompts.append(prompt)
         
-        print(f"  ⚡ Batch evaluating {len(prompts)} multihop reasoning questions...")
+        print(f"  Batch evaluating {len(prompts)} multihop reasoning questions...")
         responses = batch_call_llm(prompts, show_progress=False)
         
         results = []
@@ -1703,7 +1703,7 @@ def run_subset_evaluation(
     # Print corpus stats
     cs = results["corpus_stats"]
     if cs:
-        print(f"\n  📚 CORPUS STATS:")
+        print(f"\n  CORPUS STATS:")
         print(f"     Total Chunks: {cs.get('total_chunks', 'N/A')}")
         print(f"     Text Chunks: {cs.get('text_chunks', 'N/A')}")
         print(f"     Table Chunks: {cs.get('table_chunks', 'N/A')}")
@@ -1717,14 +1717,14 @@ def run_subset_evaluation(
     
     # Print context stats
     ctx = results["context_stats"]
-    print(f"\n  📋 CONTEXT STATS:")
+    print(f"\n  CONTEXT STATS:")
     print(f"     Total Contexts: {ctx.get('total_contexts', 'N/A')}")
     print(f"     Avg Chunks/Context: {ctx.get('avg_chunks_per_context', 'N/A')}")
     print(f"     Hop Distribution: {ctx.get('hop_distribution', {})}")
     
     # Print QA category stats
     qa_cat = results["qa_category_stats"]
-    print(f"\n  📊 QA CATEGORY STATS:")
+    print(f"\n  QA CATEGORY STATS:")
     print(f"     Total QA Pairs: {qa_cat.get('total_qa_pairs', 'N/A')}")
     print(f"     Text-only QA: {qa_cat.get('text_only_qa', 'N/A')}")
     print(f"     Table-only QA: {qa_cat.get('table_only_qa', 'N/A')}")
@@ -1773,9 +1773,9 @@ def run_subset_evaluation(
             ragas_sample_size = min(sample_size or RAGAS_MAX_SAMPLES, RAGAS_MAX_SAMPLES)
             if len(transformed_data) > ragas_sample_size:
                 eval_data = random.sample(transformed_data, ragas_sample_size)
-                print(f"\n  📊 Sampling {ragas_sample_size}/{len(transformed_data)} items for RAGAS...")
+                print(f"\n  Sampling {ragas_sample_size}/{len(transformed_data)} items for RAGAS...")
             
-            print(f"\n  ⚡ Running RAGAS evaluation on {len(eval_data)} items (parallel, ~2-5 min)...")
+            print(f"\n  Running RAGAS evaluation on {len(eval_data)} items (parallel, ~2-5 min)...")
             ragas_df = evaluator.evaluate_ragas_standard(eval_data)
             
             # Extract metrics
@@ -1798,17 +1798,17 @@ def run_subset_evaluation(
             
             results["ragas_metrics"] = ragas_results
             
-            print(f"\n  📊 RAGAS Results:")
+            print(f"\n  RAGAS Results:")
             print(f"     Faithfulness: {ragas_results.get('faithfulness', 'N/A'):.3f}" if ragas_results.get('faithfulness') else "     Faithfulness: N/A")
             print(f"     Answer Relevance: {ragas_results.get('answer_relevance', 'N/A'):.3f}" if ragas_results.get('answer_relevance') else "     Answer Relevance: N/A")
             print(f"     Context Precision: {ragas_results.get('context_precision', 'N/A'):.3f}" if ragas_results.get('context_precision') else "     Context Precision: N/A")
             print(f"     Context Recall: {ragas_results.get('context_recall', 'N/A'):.3f}" if ragas_results.get('context_recall') else "     Context Recall: N/A")
             
         except Exception as e:
-            print(f"\n  ⚠️ RAGAS evaluation failed: {e}")
+            print(f"\n  [WARN] RAGAS evaluation failed: {e}")
             results["ragas_metrics"] = {"error": str(e)}
     else:
-        print("\n  ⚠️ RAGAS not available. Install with: pip install ragas datasets")
+        print("\n  [WARN] RAGAS not available. Install with: pip install ragas datasets")
         results["ragas_metrics"] = {"error": "RAGAS not installed"}
     
     # 2. Domain Coverage (if corpus provided)
@@ -1863,7 +1863,7 @@ def run_subset_evaluation(
         
         # Use batch evaluation if available
         if BATCH_AVAILABLE and len(batch_items) > 1:
-            print(f"\n  ⚡ Using batch processing for {len(batch_items)} items...")
+            print(f"\n  Using batch processing for {len(batch_items)} items...")
             batch_results = evaluator.batch_evaluate_context_necessity(batch_items)
             
             necessity_scores = [r['context_necessity_score'] for r in batch_results]
@@ -1923,7 +1923,7 @@ def run_subset_evaluation(
         
         # Use batch evaluation if available
         if BATCH_AVAILABLE and len(batch_items) > 1:
-            print(f"\n  ⚡ Using batch processing for {len(batch_items)} multihop items...")
+            print(f"\n  Using batch processing for {len(batch_items)} multihop items...")
             batch_results = evaluator.batch_evaluate_multihop_reasoning(batch_items)
             
             hop_counts = [int(r.get('hop_count', 1)) for r in batch_results]
@@ -1995,7 +1995,7 @@ def run_subset_evaluation(
     # FINAL SUMMARY - Key Metrics from MiRAGE Paper (Table 2)
     # =========================================================================
     print("\n" + "=" * 70)
-    print("📊 MiRAGE EVALUATION SUMMARY (Paper Table 2 Metrics)")
+    print("MiRAGE EVALUATION SUMMARY (Paper Table 2 Metrics)")
     print("=" * 70)
     
     # Extract metrics
@@ -2052,7 +2052,7 @@ def run_subset_evaluation(
     mm_qa = results.get("qa_category_stats", {}).get("multimodal_qa_inclusive", 0)
     table_qa = results.get("qa_category_stats", {}).get("table_qa_inclusive", 0)
     
-    print(f"\n  📈 Dataset: {total_qa} QA pairs | {mm_qa} multimodal | {table_qa} with tables")
+    print(f"\n  Dataset: {total_qa} QA pairs | {mm_qa} multimodal | {table_qa} with tables")
     print("=" * 70)
     
     # Save results
@@ -2096,7 +2096,7 @@ def main(json_path: str, output_dir: str = None):
     print("METRICS EVALUATION STATUS:")
     print("-" * 60)
     for metric, status in missing_info["metrics_status"].items():
-        symbol = "✓" if status["can_evaluate"] else "✗"
+        symbol = "[OK]" if status["can_evaluate"] else "[X]"
         quality = status["quality"]
         print(f"  {symbol} {metric}: {quality}")
         if status.get("missing"):
@@ -2107,7 +2107,7 @@ def main(json_path: str, output_dir: str = None):
     print("RECOMMENDATIONS:")
     print("-" * 60)
     for rec in missing_info["recommendations"]:
-        print(f"  • {rec}")
+        print(f"  - {rec}")
     
     # 3. Transform data
     print("\n[3/5] Transforming data to evaluation format...")

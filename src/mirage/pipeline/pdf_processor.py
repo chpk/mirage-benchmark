@@ -329,7 +329,7 @@ def _annotate_items_batch(conv_res, model_name, pictures_to_skip):
         return pictures_to_skip
     
     # Execute batch VLM call
-    print(f"\n⚡ Batch annotating {len(batch_requests)} items...")
+    print(f"\nBatch annotating {len(batch_requests)} items...")
     responses = batch_call_vlm_base64(batch_requests, show_progress=True)
     
     # Apply responses to items
@@ -342,12 +342,12 @@ def _annotate_items_batch(conv_res, model_name, pictures_to_skip):
                 provenance=model_name
             )
             item.annotations.append(annotation)
-            print(f"✅ Added annotation to {item_type} {idx}")
+            print(f"[OK] Added annotation to {item_type} {idx}")
             success_count += 1
         else:
-            print(f"❌ Failed to annotate {item_type} {idx}: {response[:100] if response else 'No response'}")
+            print(f"[FAIL] Failed to annotate {item_type} {idx}: {response[:100] if response else 'No response'}")
     
-    print(f"\n📊 Batch annotation complete: {success_count}/{len(batch_requests)} successful")
+    print(f"\nBatch annotation complete: {success_count}/{len(batch_requests)} successful")
     return pictures_to_skip
 
 
@@ -525,12 +525,12 @@ def process_single_document(doc_path, doc_converter, output_dir, is_pdf=True):
         
         elapsed = time.time() - doc_start
         file_type = "PDF" if is_pdf else "HTML"
-        _log.info(f"✅ Processed {file_type} {doc_filename} in {elapsed:.1f}s")
+        _log.info(f"[OK] Processed {file_type} {doc_filename} in {elapsed:.1f}s")
         return True, doc_filename, elapsed
         
     except Exception as e:
         elapsed = time.time() - doc_start
-        _log.error(f"❌ Failed to process {doc_path.name}: {str(e)}")
+        _log.error(f"[FAIL] Failed to process {doc_path.name}: {str(e)}")
         return False, doc_path.name, elapsed
 
 # Backward compatibility alias

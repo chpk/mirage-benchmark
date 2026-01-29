@@ -70,7 +70,7 @@ class LocalEmbeddingWrapper:
     """Wrapper to make sentence-transformers compatible with langchain embeddings interface."""
     def __init__(self, model_name: str = "BAAI/bge-m3"):
         self.model = SentenceTransformer(model_name, trust_remote_code=True)
-        print(f"✅ Loaded local embedding model: {model_name}")
+        print(f"[OK] Loaded local embedding model: {model_name}")
     
     def embed_query(self, text: str) -> List[float]:
         """Embed a single query text."""
@@ -421,7 +421,7 @@ class OptimizedMetricsEvaluator:
             try:
                 self.embeddings = GoogleGenerativeAIEmbeddings(model=embedding_model, google_api_key=API_KEY)
                 self.embedding_type = "gemini"
-                print(f"✅ Using Gemini embeddings: {embedding_model}")
+                print(f"[OK] Using Gemini embeddings: {embedding_model}")
             except Exception as e:
                 print(f"Warning: Failed to initialize Gemini embeddings: {e}")
         
@@ -1032,7 +1032,7 @@ class OptimizedMetricsEvaluator:
             for item in qa_items
         ]
         
-        print(f"  ⚡ Phase 1: Answering {len(prompts_without)} questions without context...")
+        print(f"  Phase 1: Answering {len(prompts_without)} questions without context...")
         answers_without = batch_call_llm(prompts_without, show_progress=False)
         
         # Phase 2: Batch verification
@@ -1062,7 +1062,7 @@ class OptimizedMetricsEvaluator:
                 verify_indices.append(i)
         
         if verify_prompts:
-            print(f"  ⚡ Phase 2: Verifying {len(verify_prompts)} answers...")
+            print(f"  Phase 2: Verifying {len(verify_prompts)} answers...")
             verify_responses = batch_call_llm(verify_prompts, show_progress=False)
             
             for idx, verify_content in zip(verify_indices, verify_responses):
@@ -1139,7 +1139,7 @@ class OptimizedMetricsEvaluator:
                 answer=item['answer']
             ))
         
-        print(f"  ⚡ Batch evaluating {len(prompts)} multihop questions...")
+        print(f"  Batch evaluating {len(prompts)} multihop questions...")
         responses = batch_call_llm(prompts, show_progress=False)
         
         results = []
@@ -1599,12 +1599,12 @@ def run_dataset_qa_evaluation(qa_data: List[Dict],
     print("\n" + "=" * 60)
     print("DATASET QUALITY SUMMARY")
     print("=" * 60)
-    print(f"  📊 Average Faithfulness:     {avg_faithfulness:.3f}")
-    print(f"  📊 Average Answer Relevancy: {avg_relevancy:.3f}")
-    print(f"  📊 Average Context Precision: {avg_precision:.3f}")
+    print(f"  Average Faithfulness:     {avg_faithfulness:.3f}")
+    print(f"  Average Answer Relevancy: {avg_relevancy:.3f}")
+    print(f"  Average Context Precision: {avg_precision:.3f}")
     if concept_hops_list:
-        print(f"  📊 Average Concept Hops:     {avg_concept_hops:.2f} ({len(concept_hops_list)} questions)")
-    print(f"\n  ⚠️  Issues found: {len(issues)}")
+        print(f"  Average Concept Hops:     {avg_concept_hops:.2f} ({len(concept_hops_list)} questions)")
+    print(f"\n  [WARN] Issues found: {len(issues)}")
     
     if issues:
         print("\n  Issues breakdown:")
@@ -1630,7 +1630,7 @@ def run_dataset_qa_evaluation(qa_data: List[Dict],
     if output_path:
         with open(output_path, 'w') as f:
             json.dump(output, f, indent=2)
-        print(f"\n💾 Results saved to: {output_path}")
+        print(f"\nResults saved to: {output_path}")
     
     return output
 
@@ -1664,10 +1664,10 @@ def run_optimized_evaluation(qa_data: List[Dict],
         max_workers=max_workers
     )
     
-    print("📊 Evaluating metrics (4-6 LLM calls per QA pair)...")
+    print("Evaluating metrics (4-6 LLM calls per QA pair)...")
     results = evaluator.evaluate_batch(qa_data, show_progress=True)
     
-    print("\n📈 Computing aggregate scores...")
+    print("\nComputing aggregate scores...")
     aggregate = evaluator.compute_aggregate_scores(results)
     
     print("\n" + "=" * 60)
@@ -1693,7 +1693,7 @@ def run_optimized_evaluation(qa_data: List[Dict],
     if output_path:
         with open(output_path, 'w') as f:
             json.dump(output, f, indent=2)
-        print(f"\n💾 Results saved to: {output_path}")
+        print(f"\nResults saved to: {output_path}")
     
     return output
 
@@ -1786,7 +1786,7 @@ def run_optimized_pipeline_evaluation(
     import random
     
     # Load QA data
-    print(f"📂 Loading QA data from {qa_file}...")
+    print(f"Loading QA data from {qa_file}...")
     with open(qa_file, 'r', encoding='utf-8') as f:
         raw_data = json.load(f)
     
@@ -1802,9 +1802,9 @@ def run_optimized_pipeline_evaluation(
     # Sample if requested
     if sample_size and sample_size < len(raw_data):
         raw_data = random.sample(raw_data, sample_size)
-        print(f"📊 Sampled {sample_size}/{original_count} QA pairs for evaluation")
+        print(f"Sampled {sample_size}/{original_count} QA pairs for evaluation")
     
-    print(f"✅ Loaded {len(raw_data)} QA pairs")
+    print(f"[OK] Loaded {len(raw_data)} QA pairs")
     if expert_persona:
         print(f"   Expert Persona: {expert_persona}")
     if domain:
@@ -1844,7 +1844,7 @@ def run_optimized_pipeline_evaluation(
     print("RAGAS-STYLE METRICS (Optimized)")
     print("=" * 60)
     
-    print(f"📊 Evaluating {len(qa_data)} QA pairs (4-6 LLM calls each)...")
+    print(f"Evaluating {len(qa_data)} QA pairs (4-6 LLM calls each)...")
     batch_results = evaluator.evaluate_batch(qa_data, show_progress=True)
     aggregate = evaluator.compute_aggregate_scores(batch_results)
     
@@ -2056,7 +2056,7 @@ def run_optimized_pipeline_evaluation(
     # FINAL SUMMARY
     # ==========================================
     print("\n" + "=" * 70)
-    print("📊 EVALUATION SUMMARY (Harmonized Metrics)")
+    print("EVALUATION SUMMARY (Harmonized Metrics)")
     print("=" * 70)
     
     # Dataset Info
@@ -2070,7 +2070,7 @@ def run_optimized_pipeline_evaluation(
         print(f"    QA Pairs Generated: {ds_info.get('total_qa_pairs_generated', 0)}")
         print(f"    QA Pairs Evaluated: {ds_info.get('total_qa_pairs_evaluated', 0)}")
         if ds_info.get('sampled'):
-            print(f"    ⚠️  Sampled for evaluation")
+            print(f"    [NOTE] Sampled for evaluation")
     
     rm = results['ragas_metrics']
     print(f"\n  RAGAS Metrics:")
@@ -2117,7 +2117,7 @@ def run_optimized_pipeline_evaluation(
         
         with open(report_path, 'w') as f:
             json.dump(convert_numpy(results), f, indent=2)
-        print(f"\n💾 Report saved to: {report_path}")
+        print(f"\nReport saved to: {report_path}")
     
     return results
 

@@ -30,9 +30,9 @@ try:
     MIN_COMMUNITY_SIZE = _dedup.get('min_community_size', 2)
     # α parameter: weight for semantic similarity vs chunk lineage (Eq. 10 in manuscript)
     ALPHA = _dedup.get('alpha', 0.6)
-    print(f"✅ Deduplication config loaded: α={ALPHA}, question_threshold={QUESTION_SIMILARITY_THRESHOLD}")
+    print(f"[OK] Deduplication config loaded: alpha={ALPHA}, question_threshold={QUESTION_SIMILARITY_THRESHOLD}")
 except ImportError:
-    print("⚠️ config_loader not available, using default deduplication configuration")
+    print("[WARN] config_loader not available, using default deduplication configuration")
     QUESTION_SIMILARITY_THRESHOLD = 0.75
     ANSWER_SIMILARITY_HIGH = 0.95
     ANSWER_SIMILARITY_MEDIUM = 0.85
@@ -46,12 +46,12 @@ INPUT_FILE = os.path.join(OUTPUT_DIR, "qa_multihop_pass.json")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "qa_dataset_deduplicated.json")
 
 def load_dataset(filepath):
-    print(f"📂 Loading dataset from {filepath}...")
+    print(f"Loading dataset from {filepath}...")
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def save_dataset(data, filepath):
-    print(f"💾 Saving {len(data)} items to {filepath}...")
+    print(f"Saving {len(data)} items to {filepath}...")
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -234,7 +234,7 @@ def hierarchical_clustering(
     
     Returns: List of clusters (each cluster is a list of indices)
     """
-    print(f"\n🔍 Stage 1: Clustering questions by topic (threshold: {QUESTION_SIMILARITY_THRESHOLD})...")
+    print(f"\nStage 1: Clustering questions by topic (threshold: {QUESTION_SIMILARITY_THRESHOLD})...")
     
     # Stage 1: Cluster questions to group by topic/intent
     question_clusters = util.community_detection(
@@ -243,13 +243,13 @@ def hierarchical_clustering(
         min_community_size=1
     )
     
-    print(f"✅ Found {len(question_clusters)} question-based topic groups")
+    print(f"[OK] Found {len(question_clusters)} question-based topic groups")
     
     # Stage 2: Within each question cluster, sub-cluster by answer similarity
     final_clusters = []
     singleton_count = 0
     
-    print(f"\n🔍 Stage 2: Sub-clustering answers within each topic group...")
+    print(f"\nStage 2: Sub-clustering answers within each topic group...")
     
     for q_cluster in tqdm(question_clusters, desc="Processing question clusters"):
         if len(q_cluster) == 1:
@@ -292,8 +292,8 @@ def hierarchical_clustering(
             if len(cluster) >= MIN_COMMUNITY_SIZE:
                 final_clusters.append(cluster)
     
-    print(f"✅ Found {len(final_clusters)} answer clusters requiring merge")
-    print(f"ℹ️  {singleton_count} singletons (unique QAs)")
+    print(f"[OK] Found {len(final_clusters)} answer clusters requiring merge")
+    print(f"[INFO] {singleton_count} singletons (unique QAs)")
     
     return final_clusters
 
@@ -308,9 +308,9 @@ def process_cluster_by_similarity(
 ) -> List[Dict]:
     """
     Process a cluster with stratified handling based on answer similarity.
-    - High similarity (>0.95): Exact duplicates → select best
-    - Medium similarity (0.85-0.95): Partial overlap → LLM merge → reorganize
-    - Low similarity (0.70-0.85): Related → LLM evaluate → reorganize
+    - High similarity (>0.95): Exact duplicates -> select best
+    - Medium similarity (0.85-0.95): Partial overlap -> LLM merge -> reorganize
+    - Low similarity (0.70-0.85): Related -> LLM evaluate -> reorganize
     
     After LLM merging, optionally reorganizes into balanced QA packs.
     
@@ -383,33 +383,33 @@ def deduplicate_dataset():
     
     # 1. Load Data
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ Input file {INPUT_FILE} not found.")
+        print(f"[ERROR] Input file {INPUT_FILE} not found.")
         return
 
     data = load_dataset(INPUT_FILE)
     if not data:
-        print("⚠️ Dataset is empty.")
+        print("[WARN] Dataset is empty.")
         return
 
     print(f"\n{'='*80}")
-    print("🎯 HIERARCHICAL DEDUPLICATION: Questions → Answers")
+    print("HIERARCHICAL DEDUPLICATION: Questions -> Answers")
     print(f"{'='*80}\n")
 
     # 2. Prepare separate embeddings for questions and answers
-    print("⚙️  Preparing text for embedding...")
+    print("Preparing text for embedding...")
     questions = [item['question'] for item in data]
     answers = [item['answer'] for item in data]
 
     # 3. Load Embedding Model & Embed
     model_name = get_best_embedding_model()
-    print(f"🤖 Loading embedding model: {model_name}")
+    print(f"Loading embedding model: {model_name}")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     embedder = SentenceTransformer(model_name, device=device)
     
-    print(f"📊 Generating question embeddings for {len(questions)} QA pairs...")
+    print(f"Generating question embeddings for {len(questions)} QA pairs...")
     question_embeddings = embedder.encode(questions, convert_to_tensor=True, show_progress_bar=True)
     
-    print(f"📊 Generating answer embeddings for {len(answers)} QA pairs...")
+    print(f"Generating answer embeddings for {len(answers)} QA pairs...")
     answer_embeddings = embedder.encode(answers, convert_to_tensor=True, show_progress_bar=True)
 
     # 4. Hierarchical Clustering: Questions first, then Answers
@@ -441,10 +441,10 @@ def deduplicate_dataset():
             final_dataset.append(data[i])
             stats['singletons'] += 1
 
-    print(f"\nℹ️  Added {stats['singletons']} unique (singleton) items.")
+    print(f"\n[INFO] Added {stats['singletons']} unique (singleton) items.")
 
     # 6. Process clusters with stratified handling
-    print(f"\n🔄 Processing {len(clusters)} clusters with stratified merge strategy...")
+    print(f"\nProcessing {len(clusters)} clusters with stratified merge strategy...")
     
     for cluster in tqdm(clusters, desc="Merging clusters"):
         cluster_items = [data[idx] for idx in cluster]
@@ -474,7 +474,7 @@ def deduplicate_dataset():
 
     # 7. Save Results
     print("\n" + "="*80)
-    print("📊 HIERARCHICAL DEDUPLICATION SUMMARY")
+    print("HIERARCHICAL DEDUPLICATION SUMMARY")
     print("="*80)
     print(f"Original count:           {stats['original']}")
     print(f"Final count:              {len(final_dataset)}")

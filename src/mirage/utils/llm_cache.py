@@ -64,7 +64,7 @@ class LLMCache:
             try:
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     self._cache = json.load(f)
-                print(f"📦 LLM Cache: Loaded {len(self._cache)} cached responses")
+                print(f"LLM Cache: Loaded {len(self._cache)} cached responses")
             except (json.JSONDecodeError, IOError) as e:
                 logging.warning(f"Failed to load LLM cache: {e}")
                 self._cache = {}
@@ -332,7 +332,7 @@ class LLMCache:
     def print_stats(self):
         """Print cache statistics."""
         stats = self.get_stats()
-        print("\n📦 LLM CACHE STATISTICS")
+        print("\nLLM CACHE STATISTICS")
         print("=" * 50)
         print(f"   Cache size:     {stats['cache_size']} responses")
         print(f"   Cache hits:     {stats['hits']}")
@@ -348,7 +348,7 @@ class LLMCache:
             self._cache = {}
             if self.cache_file.exists():
                 self.cache_file.unlink()
-            print("🗑️  LLM cache cleared")
+            print("LLM cache cleared")
 
 
 # Global cache instance (initialized in main.py)

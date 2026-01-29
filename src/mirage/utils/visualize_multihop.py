@@ -323,8 +323,8 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
 </head>
 <body>
     <div class="container">
-        <h1>🔗 Multihop QA Visualization</h1>
-        <p class="subtitle">Initial Chunk → Retrieval Iterations → Context → Keyword Chain → QA</p>
+        <h1>Multihop QA Visualization</h1>
+        <p class="subtitle">Initial Chunk -> Retrieval Iterations -> Context -> Keyword Chain -> QA</p>
         
         <div class="stats">
             <div class="stat">
@@ -353,7 +353,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     
     html += f'''
         <div class="section">
-            <div class="section-title">📄 Initial Chunk</div>
+            <div class="section-title">Initial Chunk</div>
             <div class="initial-chunk">
                 <span class="initial-label">SEED CHUNK · {initial_chunk.get('file_name', 'unknown')}:{initial_chunk.get('chunk_id', '?')}</span>
                 <div class="chunk-content">{initial_highlighted}</div>
@@ -366,7 +366,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     # Retrieval Iterations Section
     html += '''
         <div class="section">
-            <div class="section-title">🔄 Retrieval Iterations</div>
+            <div class="section-title">Retrieval Iterations</div>
 '''
     
     for log in iteration_logs:
@@ -407,7 +407,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
                 
                 html += f'''
                     <div class="query-column">
-                        <div class="query-header" style="background:{color};">🔍 Query {q_idx + 1}: {query[:50]}{'...' if len(query) > 50 else ''}</div>
+                        <div class="query-header" style="background:{color};">Query {q_idx + 1}: {query[:50]}{'...' if len(query) > 50 else ''}</div>
                         <div class="query-chunks">
 '''
                 
@@ -452,7 +452,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     # Final Context Section
     html += '''
         <div class="section">
-            <div class="section-title">📚 Final Context (All Chunks)</div>
+            <div class="section-title">Final Context (All Chunks)</div>
             <div class="context-box">
                 <div class="context-chunks-list">
 '''
@@ -475,7 +475,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     if related_keywords:
         html += '''
         <div class="section">
-            <div class="section-title">🔗 Keyword Chain (Cross-Chunk Connections)</div>
+            <div class="section-title">Keyword Chain (Cross-Chunk Connections)</div>
             <div class="keyword-chain">
 '''
         relationships = related_keywords.split(';')
@@ -488,7 +488,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
                     color = query_colors[i % len(query_colors)]
                     html += f'''
                 <span class="chain-kw" style="background:{color}33;color:{color};">{kw1}</span>
-                <span class="chain-arrow">→</span>
+                <span class="chain-arrow">-></span>
                 <span class="chain-kw" style="background:{color}33;color:{color};">{kw2}</span>
                 <span class="chain-relation">({connection})</span>
 '''
@@ -505,7 +505,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     
     html += f'''
         <div class="section">
-            <div class="section-title">❓ Generated Question & Answer</div>
+            <div class="section-title">Generated Question & Answer</div>
             <div class="qa-box">
                 <div class="qa-label question-label">Question:</div>
                 <div class="question-text">{question_highlighted}</div>
@@ -524,7 +524,7 @@ def generate_html_visualization(qa_item: Dict, output_path: str = None) -> str:
     
     if output_path:
         Path(output_path).write_text(html, encoding='utf-8')
-        print(f"✅ Visualization saved to: {output_path}")
+        print(f"[OK] Visualization saved to: {output_path}")
     
     return html
 
@@ -540,20 +540,20 @@ def main():
     
     qa_file = Path(args.qa_file)
     if not qa_file.exists():
-        print(f"❌ QA file not found: {qa_file}")
+        print(f"[ERROR] QA file not found: {qa_file}")
         return
     
     with open(qa_file, 'r', encoding='utf-8') as f:
         qa_data = json.load(f)
     
     if not qa_data:
-        print("❌ No QA pairs found in file")
+        print("[ERROR] No QA pairs found in file")
         return
     
     index = min(args.index, len(qa_data) - 1)
     qa_item = qa_data[index]
     
-    print(f"📊 Visualizing QA pair {index + 1}/{len(qa_data)}")
+    print(f"Visualizing QA pair {index + 1}/{len(qa_data)}")
     print(f"   Question: {qa_item.get('question', '')[:80]}...")
     print(f"   Chunks: {len(qa_item.get('context_chunks', []))}")
     print(f"   Hop count: {qa_item.get('hop_count', 0)}")

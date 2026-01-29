@@ -30,14 +30,14 @@ def save_domain_expert_to_env(domain: str, expert_persona: str):
     """Save domain and expert persona as environment variables"""
     os.environ['DATASET_DOMAIN'] = domain
     os.environ['DATASET_EXPERT_PERSONA'] = expert_persona
-    print(f"💾 Saved to environment: DATASET_DOMAIN={domain}, DATASET_EXPERT_PERSONA={expert_persona}")
+    print(f"Saved to environment: DATASET_DOMAIN={domain}, DATASET_EXPERT_PERSONA={expert_persona}")
 
 def load_domain_expert_from_env() -> Tuple[str, str]:
     """Load domain and expert persona from environment variables"""
     domain = os.environ.get('DATASET_DOMAIN')
     expert_persona = os.environ.get('DATASET_EXPERT_PERSONA')
     if domain and expert_persona:
-        print(f"📥 Loaded from environment: domain={domain}, expert_persona={expert_persona}")
+        print(f"Loaded from environment: domain={domain}, expert_persona={expert_persona}")
         return domain, expert_persona
     return None, None
 
@@ -72,21 +72,21 @@ def load_precomputed_embeddings(model_name: str = "nomic") -> Tuple[np.ndarray, 
         raise FileNotFoundError(f"Chunk IDs file not found: {chunk_ids_path}")
     
     # Load embeddings
-    print(f"📂 Loading pre-computed embeddings from {embeddings_path}...")
+    print(f"Loading pre-computed embeddings from {embeddings_path}...")
     with np.load(embeddings_path) as data:
         if model_name in data:
              embeddings = data[model_name]
-             print(f"✅ Loaded embeddings for {model_name}: {embeddings.shape}")
+             print(f"[OK] Loaded embeddings for {model_name}: {embeddings.shape}")
         else:
              raise ValueError(f"Model {model_name} not found in embeddings file. Available: {data.files}")
              
     # Load chunk IDs
-    print(f"📂 Loading chunk IDs from {chunk_ids_path}...")
+    print(f"Loading chunk IDs from {chunk_ids_path}...")
     with open(chunk_ids_path, 'r') as f:
         chunk_ids_data = json.load(f)
         if model_name in chunk_ids_data:
             chunk_ids = chunk_ids_data[model_name]
-            print(f"✅ Loaded {len(chunk_ids)} chunk IDs for {model_name}")
+            print(f"[OK] Loaded {len(chunk_ids)} chunk IDs for {model_name}")
         else:
             raise ValueError(f"Model {model_name} not found in chunk_ids file.")
             
@@ -102,7 +102,7 @@ def align_chunks_with_embeddings(chunks: List[Dict], chunk_ids: List[str]) -> Tu
         aligned_chunks: List of chunks found
         valid_indices: Indices of the embeddings that correspond to the found chunks
     """
-    print("🔄 Aligning chunks with pre-computed embeddings...")
+    print("Aligning chunks with pre-computed embeddings...")
     
     # Create map of chunk_id -> chunk for O(1) lookup
     chunk_map = {}
@@ -123,11 +123,11 @@ def align_chunks_with_embeddings(chunks: List[Dict], chunk_ids: List[str]) -> Tu
             missing_ids.append(target_id)
             
     if missing_ids:
-        print(f"⚠️ Warning: {len(missing_ids)} chunks from embeddings not found in source file.")
+        print(f"[WARN] {len(missing_ids)} chunks from embeddings not found in source file.")
         if len(missing_ids) < 10:
             print(f"   Missing IDs: {missing_ids}")
             
-    print(f"✅ Aligned {len(aligned_chunks)} chunks.")
+    print(f"[OK] Aligned {len(aligned_chunks)} chunks.")
     return aligned_chunks, valid_indices
 
 def get_embeddings_multimodal(chunks: List[Dict], embed_model: NomicVLEmbed) -> np.ndarray:
@@ -135,7 +135,7 @@ def get_embeddings_multimodal(chunks: List[Dict], embed_model: NomicVLEmbed) -> 
     Generate multimodal embeddings for chunks using NomicVLEmbed.
     Handles text and optional images (from 'artifact' field).
     """
-    print(f"🖼️ Generating Multimodal Embeddings for {len(chunks)} chunks...")
+    print(f"Generating Multimodal Embeddings for {len(chunks)} chunks...")
     
     embeddings = []
     
@@ -165,7 +165,7 @@ def get_embeddings_multimodal(chunks: List[Dict], embed_model: NomicVLEmbed) -> 
                 emb = emb.cpu().float().numpy()
             embeddings.append(emb)
         except Exception as e:
-            print(f"❌ Error embedding chunk {i}: {e}")
+            print(f"[ERROR] Error embedding chunk {i}: {e}")
             try:
                 emb = embed_model.encode(text, convert_to_numpy=True)
                 if isinstance(emb, torch.Tensor):
@@ -183,7 +183,7 @@ def get_embeddings_text_only(chunks: List[Dict], model_name: str = "BAAI/bge-m3"
     """
     Generate text-only embeddings using SentenceTransformer (BGE-M3).
     """
-    print(f"📝 Generating Text-Only Embeddings using {model_name}...")
+    print(f"Generating Text-Only Embeddings using {model_name}...")
     
     docs = [c.get('content', '') for c in chunks]
     
@@ -199,7 +199,7 @@ def get_domain_model(chunks: List[Dict], embeddings: Optional[Union[torch.Tensor
     """
     Train BERTopic model using embeddings (pre-calculated or computed on-the-fly).
     """
-    print(f"🚀 Starting Topic Modeling on {len(chunks)} chunks...")
+    print(f"Starting Topic Modeling on {len(chunks)} chunks...")
     
     # Extract text content for BERTopic (it still needs docs for representation)
     docs = [c.get('content', '') for c in chunks]
@@ -208,10 +208,10 @@ def get_domain_model(chunks: List[Dict], embeddings: Optional[Union[torch.Tensor
     if embeddings is not None:
         # Convert torch.Tensor to numpy if needed (BERTopic requires numpy)
         if isinstance(embeddings, torch.Tensor):
-            print("✅ Using pre-computed embeddings (converting GPU tensor to numpy for BERTopic)")
+            print("[OK] Using pre-computed embeddings (converting GPU tensor to numpy for BERTopic)")
             embeddings = embeddings.cpu().float().numpy()
         else:
-            print("✅ Using pre-computed embeddings")
+            print("[OK] Using pre-computed embeddings")
     else:
         if USE_MULTIMODAL_EMBEDDINGS:
             # Use the same embedding model as the main pipeline
@@ -269,8 +269,8 @@ def get_domain_model(chunks: List[Dict], embeddings: Optional[Union[torch.Tensor
             print("   Mode: Text-Only (BGE-M3) - COMPUTING ON THE FLY")
             embeddings = get_embeddings_text_only(chunks, model_name="BAAI/bge-m3")
         
-    print(f"✅ Embeddings shape: {embeddings.shape}")
-    print(f"✅ Docs length: {len(docs)}")
+    print(f"[OK] Embeddings shape: {embeddings.shape}")
+    print(f"[OK] Docs length: {len(docs)}")
     
     if embeddings.shape[0] != len(docs):
         raise ValueError(f"Mismatch: Embeddings rows ({embeddings.shape[0]}) != Docs length ({len(docs)})")
@@ -296,20 +296,20 @@ def get_domain_model(chunks: List[Dict], embeddings: Optional[Union[torch.Tensor
     # Fit the model using pre-calculated embeddings
     topics, probs = topic_model.fit_transform(docs, embeddings)
     
-    print(f"✅ Topic Modeling Complete. Found {len(topic_model.get_topic_info()) - 1} topics.")
+    print(f"[OK] Topic Modeling Complete. Found {len(topic_model.get_topic_info()) - 1} topics.")
     return topic_model, docs, embeddings
 
 def query_llm_for_domain(topic_model: BERTopic) -> Tuple[str, str]:
     """
     Extract domain and expert role using LLM based on topics.
     """
-    print("🤖 Querying LLM for Domain and Role...")
+    print("Querying LLM for Domain and Role...")
     
     # Get top topics info
     topic_info = topic_model.get_topic_info()
     total_count = topic_info['Count'].sum()
     
-    print("\n📊 TOPIC SUMMARY:")
+    print("\nTOPIC SUMMARY:")
     print(f"{'ID':<6} {'Count':<8} {'Freq':<8} {'Keywords'}")
     print("-" * 100)
     
@@ -381,7 +381,7 @@ def visualize_results(topic_model: BERTopic, docs: List[str], output_dir: str, e
     """
     Generate and save visualizations.
     """
-    print(f"📊 Generating visualizations in {output_dir}...")
+    print(f"Generating visualizations in {output_dir}...")
     os.makedirs(output_dir, exist_ok=True)
     
     if generate_plots:
@@ -391,7 +391,7 @@ def visualize_results(topic_model: BERTopic, docs: List[str], output_dir: str, e
             fig_topics.write_html(os.path.join(output_dir, "topics_distance_map.html"))
             print("  - Saved topics_distance_map.html")
         except Exception as e:
-            print(f"  ⚠️ Could not generate topic visualization: {e}")
+            print(f"  [WARN] Could not generate topic visualization: {e}")
 
         # 2. Visualize Hierarchy
         try:
@@ -399,7 +399,7 @@ def visualize_results(topic_model: BERTopic, docs: List[str], output_dir: str, e
             fig_hierarchy.write_html(os.path.join(output_dir, "topics_hierarchy.html"))
             print("  - Saved topics_hierarchy.html")
         except Exception as e:
-            print(f"  ⚠️ Could not generate hierarchy visualization: {e}")
+            print(f"  [WARN] Could not generate hierarchy visualization: {e}")
 
         # 3. Visualize Document Datamap (Requires datamapplot and 2D embeddings)
         if embeddings is not None:
@@ -426,7 +426,7 @@ def visualize_results(topic_model: BERTopic, docs: List[str], output_dir: str, e
                     
                 print("  - Saved document_datamap.html")
             except Exception as e:
-                print(f"  ⚠️ Could not generate document datamap: {e}")
+                print(f"  [WARN] Could not generate document datamap: {e}")
     else:
         print("  - Plot generation skipped (enable with visualization=True)")
 
@@ -452,16 +452,16 @@ def fetch_domain_and_role(chunks_file: str = DEFAULT_CHUNKS_FILE,
         if os.path.exists(local_file):
             chunks_file = local_file
         else:
-            print(f"❌ Chunks file not found: {chunks_file}")
+            print(f"[ERROR] Chunks file not found: {chunks_file}")
             return "Unknown", "Expert"
 
-    print(f"📂 Loading chunks from {chunks_file}...")
+    print(f"Loading chunks from {chunks_file}...")
     with open(chunks_file, 'r') as f:
         chunks = json.load(f)
     
     # Use provided embeddings if available (from main.py pipeline)
     if embeddings is not None and chunk_ids is not None:
-        print(f"✅ Using embeddings provided from main pipeline")
+        print(f"[OK] Using embeddings provided from main pipeline")
         # Convert torch.Tensor to numpy if needed (BERTopic requires numpy)
         if isinstance(embeddings, torch.Tensor):
             print(f"   Converting GPU tensor to numpy for BERTopic")
@@ -470,7 +470,7 @@ def fetch_domain_and_role(chunks_file: str = DEFAULT_CHUNKS_FILE,
         chunks, valid_indices = align_chunks_with_embeddings(chunks, chunk_ids)
         # Filter embeddings to match found chunks
         if len(valid_indices) != embeddings.shape[0]:
-             print(f"⚠️ Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
+             print(f"[WARN] Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
              embeddings = embeddings[valid_indices]
     else:
         # Fallback: Try to load pre-computed embeddings from .npz (legacy support)
@@ -480,10 +480,10 @@ def fetch_domain_and_role(chunks_file: str = DEFAULT_CHUNKS_FILE,
             chunks, valid_indices = align_chunks_with_embeddings(chunks, chunk_ids)
             # Filter embeddings to match found chunks
             if len(valid_indices) != embeddings.shape[0]:
-                 print(f"⚠️ Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
+                 print(f"[WARN] Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
                  embeddings = embeddings[valid_indices]
         except Exception as e:
-            print(f"⚠️ Could not load/align pre-computed embeddings: {e}")
+            print(f"[WARN] Could not load/align pre-computed embeddings: {e}")
             print("   Falling back to on-the-fly computation (slower)")
             embeddings = None
         
@@ -501,7 +501,7 @@ def main(visualization: bool = False):
     # Load Chunks
     chunks_file = DEFAULT_CHUNKS_FILE
     if not os.path.exists(chunks_file):
-        print(f"❌ Chunks file not found: {chunks_file}")
+        print(f"[ERROR] Chunks file not found: {chunks_file}")
         # Try to look in current dir
         local_file = "chunks.json"
         if os.path.exists(local_file):
@@ -509,7 +509,7 @@ def main(visualization: bool = False):
         else:
             return
 
-    print(f"📂 Loading chunks from {chunks_file}...")
+    print(f"Loading chunks from {chunks_file}...")
     with open(chunks_file, 'r') as f:
         chunks = json.load(f)
         
@@ -520,10 +520,10 @@ def main(visualization: bool = False):
         chunks, valid_indices = align_chunks_with_embeddings(chunks, chunk_ids)
         # Filter embeddings to match found chunks
         if len(valid_indices) != embeddings.shape[0]:
-             print(f"⚠️ Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
+             print(f"[WARN] Filtering embeddings from {embeddings.shape[0]} to {len(valid_indices)} rows")
              embeddings = embeddings[valid_indices]
     except Exception as e:
-        print(f"⚠️ Could not load/align pre-computed embeddings: {e}")
+        print(f"[WARN] Could not load/align pre-computed embeddings: {e}")
         import traceback
         traceback.print_exc()
         print("   Falling back to on-the-fly computation (slower)")
@@ -539,7 +539,7 @@ def main(visualization: bool = False):
     save_domain_expert_to_env(domain, role)
     
     print("\n" + "="*50)
-    print(f"🎯 RESULTS")
+    print(f"RESULTS")
     print(f"Domain: {domain}")
     print(f"Expert Role: {role}")
     print("="*50 + "\n")

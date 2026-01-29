@@ -257,7 +257,7 @@ def retrieve_and_rerank(query: str, model_name: str = None,
         with open(CHUNKS_FILE, 'r') as f:
             chunks = json.load(f)
         print(f"Loaded {len(chunks)} chunks")
-        print(f"✅ Using cached embeddings index in memory (fast retrieval)")
+        print(f"[OK] Using cached embeddings index in memory (fast retrieval)")
         
         # Use thread-safe cached embedder (caching is now inside _get_embedder_for_model)
         embedder = _get_embedder_for_model(model_name)
@@ -298,11 +298,11 @@ def retrieve_and_rerank(query: str, model_name: str = None,
                 res = faiss.StandardGpuResources()
                 gpu_id = _faiss_cfg.get('gpu_id', 0)
                 index = faiss.index_cpu_to_gpu(res, gpu_id, cpu_index)
-                print(f"✅ FAISS index transferred to GPU {gpu_id}")
+                print(f"[OK] FAISS index transferred to GPU {gpu_id}")
             else:
                 index = cpu_index
         except Exception as e:
-            print(f"⚠️ Could not use FAISS GPU: {e}")
+            print(f"[WARN] Could not use FAISS GPU: {e}")
             index = cpu_index
         
         # Load metadata (use index_prefix for filename)
@@ -396,7 +396,7 @@ def retrieve_and_rerank(query: str, model_name: str = None,
     this_module = sys.modules[__name__]
     if hasattr(this_module, '_cached_reranker') and this_module._cached_reranker is not None:
         reranker = this_module._cached_reranker
-        print(f"✅ Using cached MonoVLM reranker")
+        print(f"[OK] Using cached MonoVLM reranker")
     else:
         print(f"Loading MonoVLM reranker (this may take a moment)...")
         reranker = MonoVLMReranker()
@@ -479,7 +479,7 @@ def parse_verification_response(response: str) -> Tuple[str, Optional[List[str]]
             refs = re.findall(r'(Figure|Table|Annex|Formula)\s*[A-Z]?\.?\d+(?:\.\d+)?', explanation, re.IGNORECASE)
             if refs:
                 search_strings = [ref for ref in refs[:5]]
-                print(f"    ⚠️ Fallback: Generated search strings from explanation: {search_strings}")
+                print(f"    [WARN] Fallback: Generated search strings from explanation: {search_strings}")
     
     return status, search_strings, explanation
 
@@ -666,7 +666,7 @@ CANDIDATE CHUNK:
         requests.append((full_prompt, chunks_for_vlm))
     
     # Execute batch call
-    print(f"    ⚡ Batch verifying {len(requests)} candidates...")
+    print(f"    Batch verifying {len(requests)} candidates...")
     responses = batch_call_vlm_interweaved(requests, show_progress=False)
     
     # Parse all responses
@@ -817,7 +817,7 @@ def build_complete_context(
         initial_chunk_id = current_chunks[0].get('chunk_id', 'initial')
         add_chunk_to_tracking(initial_file_name, initial_chunk_id)
     
-    print(f"\n📄 Initial chunk length: {len(current_chunks[0]['content'])} chars")
+    print(f"\nInitial chunk length: {len(current_chunks[0]['content'])} chars")
     
     while depth < max_depth:
         depth += 1
@@ -836,7 +836,7 @@ def build_complete_context(
         }
         
         # Verify completeness
-        print(f"\n🔍 Verifying chunk completeness...")
+        print(f"\nVerifying chunk completeness...")
         status, search_strings, explanation = verify_chunk_completeness(
             current_chunks, expert_persona=expert_persona, domain=domain
         )
@@ -851,7 +851,7 @@ def build_complete_context(
         
         if status == "COMPLETE":
             hop_count = len(chunks_added) - 1  # Each hop adds one link
-            print(f"\n✅ Context is COMPLETE at depth {depth}, hop_count={hop_count}")
+            print(f"\n[OK] Context is COMPLETE at depth {depth}, hop_count={hop_count}")
             iteration_logs.append(iter_log)
             return {
                 'status': 'COMPLETE',
@@ -868,7 +868,7 @@ def build_complete_context(
         
         # Context is incomplete
         if not search_strings:
-            print(f"\n⚠️ No search strings generated despite INCOMPLETE status. Stopping.")
+            print(f"\n[WARN] No search strings generated despite INCOMPLETE status. Stopping.")
             hop_count = len(chunks_added) - 1
             iteration_logs.append(iter_log)
             return {
@@ -887,12 +887,12 @@ def build_complete_context(
         # Limit breadth and track max used
         search_strings = search_strings[:max_breadth]
         max_breadth_used = max(max_breadth_used, len(search_strings))
-        print(f"\n🔎 Generated {len(search_strings)} search strings:")
+        print(f"\nGenerated {len(search_strings)} search strings:")
         for i, s in enumerate(search_strings, 1):
             print(f"  {i}. {s}")
         
         # Retrieve and verify chunks for each search string - BATCH PROCESSING
-        print(f"\n📥 Retrieving top {chunks_per_search} chunks per search string...")
+        print(f"\nRetrieving top {chunks_per_search} chunks per search string...")
         new_chunks = []
         any_relevant_found = False  # Track if ANY chunk was verified as EXPLANATORY or RELATED
         
@@ -919,13 +919,13 @@ def build_complete_context(
                         not (file_name == initial_file_name and chunk_id == initial_chunk_id)):
                         candidates_to_verify.append((search_string, chunk))
                         candidate_info.append((file_name, chunk_id, chunk['score']))
-                        print(f"    📋 Queued chunk {file_name}:{chunk_id} (score: {chunk['score']:.4f}) for verification")
+                        print(f"    Queued chunk {file_name}:{chunk_id} (score: {chunk['score']:.4f}) for verification")
                     else:
-                        print(f"    ⊘ Chunk {file_name}:{chunk_id} already added")
+                        print(f"    [SKIP] Chunk {file_name}:{chunk_id} already added")
             
             except Exception as e:
                 import traceback
-                print(f"    ⚠️ Error retrieving chunks: {type(e).__name__}: {e}")
+                print(f"    [WARN] Error retrieving chunks: {type(e).__name__}: {e}")
                 traceback.print_exc()
         
         # Phase 2: Batch verify all candidates
@@ -971,13 +971,13 @@ def build_complete_context(
                         'chunk_id': chunk_id,
                         'classification': status
                     })
-                    emoji = "🎯" if status == "EXPLANATORY" else "🔗"
-                    print(f"    {emoji} {status}: {file_name}:{chunk_id} - {explanation[:100]}...")
+                    tag = "[EXPL]" if status == "EXPLANATORY" else "[REL]"
+                    print(f"    {tag} {status}: {file_name}:{chunk_id} - {explanation[:100]}...")
                 elif status == "RELATED" and chunk_addition_mode.upper() == "EXPLANATORY":
                     # Log RELATED chunks that were skipped due to mode
-                    print(f"    ⏭️ RELATED (skipped - mode={chunk_addition_mode}): {file_name}:{chunk_id} - {explanation[:100]}...")
+                    print(f"    [SKIP] RELATED (skipped - mode={chunk_addition_mode}): {file_name}:{chunk_id} - {explanation[:100]}...")
                 else:
-                    print(f"    ❌ UNRELATED: {file_name}:{chunk_id} - {explanation[:100]}...")
+                    print(f"    [SKIP] UNRELATED: {file_name}:{chunk_id} - {explanation[:100]}...")
         
         # Save iteration log
         iteration_logs.append(iter_log)
@@ -986,7 +986,7 @@ def build_complete_context(
         if new_chunks:
             explanatory_count = sum(1 for c in new_chunks if c.get('classification') == 'EXPLANATORY')
             related_count = sum(1 for c in new_chunks if c.get('classification') == 'RELATED')
-            print(f"\n📝 Adding {len(new_chunks)} verified chunks to context ({explanatory_count} EXPLANATORY, {related_count} RELATED)")
+            print(f"\nAdding {len(new_chunks)} verified chunks to context ({explanatory_count} EXPLANATORY, {related_count} RELATED)")
             current_chunks.extend(new_chunks)
             consecutive_no_progress = 0  # Reset circuit breaker
         else:
@@ -995,7 +995,7 @@ def build_complete_context(
             
             # No relevant chunks found across ALL search strings
             if not any_relevant_found:
-                print(f"\n🛑 No relevant chunks found across all {len(search_strings)} search strings.")
+                print(f"\nNo relevant chunks found across all {len(search_strings)} search strings.")
                 print(f"   The corpus likely does not contain the information needed to complete this context.")
                 print(f"   Stopping multi-hop context building for this chunk.")
                 hop_count = len(chunks_added) - 1
@@ -1013,7 +1013,7 @@ def build_complete_context(
                 }
             elif consecutive_no_progress >= MAX_CONSECUTIVE_NO_PROGRESS:
                 # Circuit breaker triggered
-                print(f"\n🛑 Circuit breaker triggered: {consecutive_no_progress} consecutive iterations with no new chunks.")
+                print(f"\nCircuit breaker triggered: {consecutive_no_progress} consecutive iterations with no new chunks.")
                 print(f"   Stopping to prevent runaway API calls.")
                 hop_count = len(chunks_added) - 1
                 return {
@@ -1029,7 +1029,7 @@ def build_complete_context(
                     'iteration_logs': iteration_logs if log_details else None
                 }
             else:
-                print(f"\n⚠️ No new chunks to add (all duplicates). Consecutive no-progress: {consecutive_no_progress}/{MAX_CONSECUTIVE_NO_PROGRESS}")
+                print(f"\n[WARN] No new chunks to add (all duplicates). Consecutive no-progress: {consecutive_no_progress}/{MAX_CONSECUTIVE_NO_PROGRESS}")
                 hop_count = len(chunks_added) - 1
                 return {
                     'status': 'INCOMPLETE_ALL_DUPLICATES',
@@ -1046,7 +1046,7 @@ def build_complete_context(
     
     # Max depth reached (only if loop completes without early termination)
     hop_count = len(chunks_added) - 1
-    print(f"\n⚠️ Max depth {max_depth} reached. Context may still be INCOMPLETE. hop_count={hop_count}")
+    print(f"\n[WARN] Max depth {max_depth} reached. Context may still be INCOMPLETE. hop_count={hop_count}")
     
     return {
         'status': 'INCOMPLETE_MAX_DEPTH',

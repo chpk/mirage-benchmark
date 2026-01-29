@@ -594,7 +594,7 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
             all_chunks = []
             for chunks in saved_chunks.values():
                 all_chunks.extend(chunks)
-            print(f"📂 Resuming from chunks checkpoint: {len(all_chunks)} chunks from {len(saved_chunks)} files")
+            print(f"Resuming from chunks checkpoint: {len(all_chunks)} chunks from {len(saved_chunks)} files")
             return all_chunks
     
     # =========================================================================
@@ -629,9 +629,9 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
     pending_docs = [f for f in doc_files if f.stem not in completed_md_stems]
     
     if existing_md_files:
-        print(f"\n📂 Found {len(existing_md_files)} existing markdown files")
+        print(f"\nFound {len(existing_md_files)} existing markdown files")
         for md_path, stem in existing_md_files:
-            print(f"   ✅ {stem}")
+            print(f"   [OK] {stem}")
     
     md_files = existing_md_files.copy()
     
@@ -672,17 +672,17 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
                         name, md_file_path, error = future.result()
                         file_stem = Path(name).stem
                         if error:
-                            print(f"  ❌ Error {name}: {error}")
+                            print(f"  [ERROR] {name}: {error}")
                             if checkpoint_mgr:
                                 checkpoint_mgr.mark_markdown_failed(file_stem, error)
                         else:
                             md_files.append((md_file_path, file_stem))
-                            print(f"  ✅ {name} -> markdown")
+                            print(f"  [OK] {name} -> markdown")
                             # Checkpoint after each successful conversion
                             if checkpoint_mgr:
                                 checkpoint_mgr.mark_markdown_complete(file_stem, md_file_path)
                     except Exception as e:
-                        print(f"  ❌ Error {doc_name}: {e}")
+                        print(f"  [ERROR] {doc_name}: {e}")
                         if checkpoint_mgr:
                             checkpoint_mgr.mark_markdown_failed(Path(doc_name).stem, str(e))
     
@@ -705,7 +705,7 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
     
     print(f"\nPhase 2: Chunking markdown files...")
     if completed_chunk_files:
-        print(f"   ✅ {len(completed_chunk_files)} files already chunked (from checkpoint)")
+        print(f"   [OK] {len(completed_chunk_files)} files already chunked (from checkpoint)")
     if pending_md_files:
         print(f"   ⏳ {len(pending_md_files)} files to chunk")
     
@@ -719,15 +719,15 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
                 try:
                     name, chunks, error = future.result()
                     if error:
-                        print(f"  ❌ Error {name}: {error}")
+                        print(f"  [ERROR] {name}: {error}")
                     else:
                         saved_chunks[file_stem] = chunks
-                        print(f"  ✅ {name}: {len(chunks)} chunks")
+                        print(f"  [OK] {name}: {len(chunks)} chunks")
                         # Checkpoint after each file is chunked
                         if checkpoint_mgr:
                             checkpoint_mgr.save_file_chunks(file_stem, chunks)
                 except Exception as e:
-                    print(f"  ❌ Error {file_stem}: {e}")
+                    print(f"  [ERROR] {file_stem}: {e}")
     
     # =========================================================================
     # PHASE 3: Combine and renumber all chunks
@@ -753,7 +753,7 @@ def convert_documents_to_chunks_parallel(doc_dir: str, output_chunks_file: str,
     if checkpoint_mgr:
         checkpoint_mgr.mark_final_chunks_saved()
     
-    print(f"💾 Saved {len(all_chunks)} total chunks to {output_chunks_file}")
+    print(f"Saved {len(all_chunks)} total chunks to {output_chunks_file}")
     return all_chunks
 
 # Backward compatibility alias
@@ -791,7 +791,7 @@ def embed_all_chunks(chunks: list, chunks_file: str, embeddings_dir: str) -> tup
         index_path = existing_indices[0]
         metadata_path = existing_metadata[0]
         
-        print(f"📂 Found existing embeddings: {os.path.basename(index_path)}")
+        print(f"Found existing embeddings: {os.path.basename(index_path)}")
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
         chunk_ids = metadata['chunk_ids']
@@ -806,7 +806,7 @@ def embed_all_chunks(chunks: list, chunks_file: str, embeddings_dir: str) -> tup
                 embeddings_array = None
             return embeddings_dir, embeddings_array, chunk_ids
         else:
-            print(f"   ⚠️ Chunk count mismatch ({len(chunk_ids)} in index vs {len(chunks)} current) - re-embedding")
+            print(f"   [WARN] Chunk count mismatch ({len(chunk_ids)} in index vs {len(chunks)} current) - re-embedding")
     
     # Define paths for new embeddings (needed when creating fresh or re-embedding)
     model_name_safe = EMBEDDING_MODEL.replace('/', '_').replace('\\', '_')
@@ -966,9 +966,9 @@ def embed_all_chunks(chunks: list, chunks_file: str, embeddings_dir: str) -> tup
             res = faiss.StandardGpuResources()
             gpu_index = faiss.index_cpu_to_gpu(res, FAISS_GPU_ID, cpu_index)
             index = gpu_index
-            print(f"✅ FAISS index transferred to GPU {FAISS_GPU_ID}")
+            print(f"[OK] FAISS index transferred to GPU {FAISS_GPU_ID}")
         except Exception as e:
-            print(f"⚠️ Failed to transfer FAISS index to GPU: {e}")
+            print(f"[WARN] Failed to transfer FAISS index to GPU: {e}")
             print("   Falling back to CPU index")
             index = cpu_index
     else:
@@ -1443,15 +1443,15 @@ def generate_qa_dataset_parallel(chunks: list, domain: str, expert_persona: str,
         import math
         max_chunks_to_process = math.ceil(1.1 * target_qa_count)
         if len(pending_chunk_data) > max_chunks_to_process:
-            print(f"⚠️  Target is {target_qa_count} QA pairs. Limiting processing to first {max_chunks_to_process} chunks (out of {len(pending_chunk_data)} total)")
+            print(f"[WARN] Target is {target_qa_count} QA pairs. Limiting processing to first {max_chunks_to_process} chunks (out of {len(pending_chunk_data)} total)")
             pending_chunk_data = pending_chunk_data[:max_chunks_to_process]
     
     print(f"\nUsing {QA_MAX_WORKERS} parallel workers for QA generation")
     print(f"Target: {target_qa_count if target_qa_count else 'unlimited'} '{QA_TYPE}' QA pairs")
     
     if completed_chunk_ids:
-        print(f"📂 Resuming from checkpoint: {len(completed_chunk_ids)} chunks already processed")
-        print(f"   ✅ {len(existing_successful)} successful QA pairs loaded")
+        print(f"Resuming from checkpoint: {len(completed_chunk_ids)} chunks already processed")
+        print(f"   [OK] {len(existing_successful)} successful QA pairs loaded")
         print(f"   ⏳ {len(pending_chunk_data)} chunks remaining")
     else:
         print(f"Processing {len(chunk_data)} chunks from corpus")
@@ -1459,7 +1459,7 @@ def generate_qa_dataset_parallel(chunks: list, domain: str, expert_persona: str,
     # Check if we already have enough QA pairs from checkpoint
     initial_matching_count = sum(1 for qa in successful_qa if is_qa_type_match(qa, QA_TYPE))
     if target_qa_count and initial_matching_count >= target_qa_count:
-        print(f"\n✅ Target already reached from checkpoint: {initial_matching_count}/{target_qa_count} QA pairs")
+        print(f"\n[OK] Target already reached from checkpoint: {initial_matching_count}/{target_qa_count} QA pairs")
         generation_stats = {
             'target_qa_pairs': target_qa_count,
             'qa_type': QA_TYPE,
@@ -1939,9 +1939,9 @@ def run_pipeline():
         OUTPUT_DIR = env_output_dir
         # Recompute all derived output paths with correct OUTPUT_DIR
         _update_output_paths()
-        print(f"📁 Output directory set from CLI: {OUTPUT_DIR}")
+        print(f"Output directory set from CLI: {OUTPUT_DIR}")
     else:
-        print(f"📁 Output directory from config: {OUTPUT_DIR}")
+        print(f"Output directory from config: {OUTPUT_DIR}")
     
     setup_logging()
     
@@ -1977,7 +1977,7 @@ def run_pipeline():
     if llm_cache:
         stats = llm_cache.get_stats()
         if stats['cache_size'] > 0:
-            print(f"📦 LLM Cache: {stats['cache_size']} cached responses, {stats['hit_rate']} hit rate")
+            print(f"LLM Cache: {stats['cache_size']} cached responses, {stats['hit_rate']} hit rate")
     
     print("=" * 70)
     print("QA DATASET GENERATION PIPELINE (WITH CHECKPOINTING)")
@@ -2001,7 +2001,7 @@ def run_pipeline():
     # =========================================================================
     # CHECKPOINT DETECTION - Resume from existing state if available
     # =========================================================================
-    print("\n📋 Checking for existing checkpoints...")
+    print("\nChecking for existing checkpoints...")
     
     # Check for existing chunks file in output directory
     import glob
@@ -2018,14 +2018,14 @@ def run_pipeline():
     }
     
     if checkpoint_status['has_chunks']:
-        print("   ✅ Found existing chunks - will skip document conversion")
+        print("   [OK] Found existing chunks - will skip document conversion")
     elif checkpoint_status['has_markdown']:
-        print("   ✅ Found existing markdown files - will skip PDF conversion, start from chunking")
+        print("   [OK] Found existing markdown files - will skip PDF conversion, start from chunking")
     else:
-        print("   ℹ️  No checkpoints found - starting from scratch")
+        print("   [INFO] No checkpoints found - starting from scratch")
     
     if checkpoint_status['has_embeddings']:
-        print("   ✅ Found existing embeddings - will reuse FAISS index")
+        print("   [OK] Found existing embeddings - will reuse FAISS index")
     
     # Step 1: Get chunks (from documents or pre-existing file)
     chunks_file = None
@@ -2033,13 +2033,13 @@ def run_pipeline():
     
     # Priority 1: Use explicitly provided chunks file
     if INPUT_CHUNKS_FILE and os.path.exists(INPUT_CHUNKS_FILE):
-        print(f"\n📂 Loading chunks from provided file: {INPUT_CHUNKS_FILE}")
+        print(f"\nLoading chunks from provided file: {INPUT_CHUNKS_FILE}")
         chunks = load_chunks(INPUT_CHUNKS_FILE)
         chunks_file = INPUT_CHUNKS_FILE
     
     # Priority 2: Use existing chunks in output directory
     elif os.path.exists(output_chunks_file):
-        print(f"\n📂 Resuming from existing chunks: {output_chunks_file}")
+        print(f"\nResuming from existing chunks: {output_chunks_file}")
         chunks = load_chunks(output_chunks_file)
         chunks_file = output_chunks_file
     
@@ -2051,7 +2051,7 @@ def run_pipeline():
             print("No chunks generated. Exiting.")
             return
     
-    print(f"   📊 Total chunks: {len(chunks)}")
+    print(f"   Total chunks: {len(chunks)}")
     
     # Step 2: Embed ALL chunks & build unified FAISS index
     embeddings_dir, embeddings_array, chunk_ids = embed_all_chunks(chunks, chunks_file, OUTPUT_EMBEDDINGS_DIR)
@@ -2103,7 +2103,7 @@ def run_pipeline():
         print("\n" + "=" * 70)
         print("STEP 5: DEDUPLICATION - SKIPPED (disabled in config)")
         print("=" * 70)
-        print("💡 To enable deduplication, set 'deduplication.enabled: true' in config.yaml")
+        print("[NOTE] To enable deduplication, set 'deduplication.enabled: true' in config.yaml")
     
     # Step 6: Generate Visualization for first multihop QA
     print("\n" + "=" * 70)
@@ -2121,9 +2121,9 @@ def run_pipeline():
             else:
                 print("   No QA pairs to visualize")
         except ImportError:
-            print("   ⚠️ visualize_multihop.py not found, skipping visualization")
+            print("   [WARN] visualize_multihop.py not found, skipping visualization")
         except Exception as e:
-            print(f"   ⚠️ Visualization failed: {e}")
+            print(f"   [WARN] Visualization failed: {e}")
     else:
         print("   No QA file found to visualize")
     

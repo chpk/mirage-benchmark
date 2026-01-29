@@ -157,7 +157,7 @@ def _initialize_config():
     
     # Warn if API key is missing for backends that require it
     if not API_KEY and BACKEND in ("GEMINI", "OPENAI"):
-        print(f"⚠️ Warning: No API key found for {BACKEND}. Set {BACKEND}_API_KEY environment variable or configure api_key_path in config.yaml")
+        print(f"[WARN] No API key found for {BACKEND}. Set {BACKEND}_API_KEY environment variable or configure api_key_path in config.yaml")
     
     _config_initialized = True
 
@@ -222,7 +222,7 @@ def setup_logging(enable_terminal_log=True):
         
         sys.stdout = TeeOutput(TERMINAL_LOG_FILE, sys.__stdout__)
         sys.stderr = TeeOutput(TERMINAL_LOG_FILE, sys.__stderr__)
-        print(f"📝 Terminal output being captured to: {TERMINAL_LOG_FILE}")
+        print(f"Terminal output being captured to: {TERMINAL_LOG_FILE}")
 
 def get_image_mime_type(image_path: str) -> str:
     """Get MIME type based on file extension"""
@@ -252,21 +252,21 @@ def test_vlm_connection(test_image: str = None) -> bool:
     Args:
         test_image: Path to a test image file. If None, returns True (skips image test).
     """
-    print("🔍 Testing VLM API connection...")
+    print("Testing VLM API connection...")
     try:
         if test_image is None:
-            print("⚠️ No test image provided, skipping VLM image test")
+            print("[WARN] No test image provided, skipping VLM image test")
             return True
         
         if not Path(test_image).exists():
-            print(f"❌ Test image not found: {test_image}")
+            print(f"[ERROR] Test image not found: {test_image}")
             return False
             
         call_vlm_simple("Describe this image briefly.", test_image)
-        print("✅ VLM API connection successful!")
+        print("[OK] VLM API connection successful!")
         return True
     except Exception as e:
-        print(f"❌ VLM API connection error: {e}")
+        print(f"[ERROR] VLM API connection error: {e}")
         return False
 
 def call_llm_simple(prompt: str, max_retries: int = 5, use_cache: bool = True) -> str:
@@ -293,7 +293,7 @@ def call_llm_simple(prompt: str, max_retries: int = 5, use_cache: bool = True) -
             if cache:
                 cached = cache.get('llm_simple', prompt, model=LLM_MODEL_NAME)
                 if cached is not None:
-                    print(f"📦 Cache hit for LLM call ({len(cached)} chars)")
+                    print(f"Cache hit for LLM call ({len(cached)} chars)")
                     return cached
         except ImportError:
             pass
@@ -382,7 +382,7 @@ def call_llm_simple(prompt: str, max_retries: int = 5, use_cache: bool = True) -
                 else:
                     raise Exception(f"HTTP {response.status_code}")
             
-            print(f"✅ LLM response received ({len(result)} chars)")
+            print(f"[OK] LLM response received ({len(result)} chars)")
             logging.info(f"LLM Response (Complete) - {len(result)} chars")
             logging.info(f"LLM Response Content: {result}")
             logging.info("-" * 60)
@@ -400,10 +400,10 @@ def call_llm_simple(prompt: str, max_retries: int = 5, use_cache: bool = True) -
             return result
                 
         except Exception as e:
-            print(f"⚠️ LLM call error (attempt {attempt}/{max_retries}): {e}")
+            print(f"[WARN] LLM call error (attempt {attempt}/{max_retries}): {e}")
             
             if attempt >= max_retries:
-                print(f"❌ LLM call failed after {max_retries} attempts. Giving up.")
+                print(f"[ERROR] LLM call failed after {max_retries} attempts. Giving up.")
                 raise Exception(f"LLM call failed after {max_retries} attempts: {e}")
         
         # Wait with exponential backoff (capped at 60 seconds)
@@ -509,17 +509,17 @@ def call_vlm_simple(prompt: str, image_path: str) -> str:
                 else:
                     raise Exception(f"HTTP {response.status_code}")
             
-            print(f"✅ VLM response received ({len(result)} chars)")
+            print(f"[OK] VLM response received ({len(result)} chars)")
             logging.info(f"VLM Response (Complete) - Image: {image_path} - {len(result)} chars")
             logging.info(f"VLM Response Content: {result}")
             logging.info("-" * 60)
             return result
                 
         except Exception as e:
-            print(f"⚠️ VLM call error (attempt {attempt}): {e}")
+            print(f"[WARN] VLM call error (attempt {attempt}): {e}")
         
         if attempt >= 3:
-            print(f"❌ VLM call failed after {attempt} attempts. Giving up.")
+            print(f"[ERROR] VLM call failed after {attempt} attempts. Giving up.")
             raise Exception(f"VLM call failed after {attempt} attempts")
             
         print(f"   Waiting {wait_time}s before retry...")
@@ -591,17 +591,17 @@ def call_vlm_with_examples(prompt: str, query_image_path: str, example_image_pat
                 else:
                     raise Exception(f"HTTP {response.status_code}")
             
-            print(f"✅ VLM response received ({len(result)} chars)")
+            print(f"[OK] VLM response received ({len(result)} chars)")
             logging.info(f"VLM Response - Query Image: {query_image_path}")
             logging.info(f"VLM Response Content: {result}")
             logging.info("-" * 60)
             return result
                 
         except Exception as e:
-            print(f"⚠️ VLM call error (attempt {attempt}): {e}")
+            print(f"[WARN] VLM call error (attempt {attempt}): {e}")
         
         if attempt >= 3:
-            print(f"❌ VLM call failed after {attempt} attempts. Giving up.")
+            print(f"[ERROR] VLM call failed after {attempt} attempts. Giving up.")
             raise Exception(f"VLM call failed after {attempt} attempts")
             
         print(f"   Waiting {wait_time}s before retry...")
@@ -643,7 +643,7 @@ def call_vlm_with_multiple_images(prompt: str, image_paths: List[str]) -> str:
                 if response.status_code == 200:
                     result = response.json()["message"]["content"]
                 elif 500 <= response.status_code < 600 or response.status_code == 429:
-                    print(f"⚠️ Server error ({response.status_code}). Retrying...")
+                    print(f"[WARN] Server error ({response.status_code}). Retrying...")
                     # Note: Do NOT decrement attempt - rate limits count against max retries
                     raise Exception(f"Server error {response.status_code}")
                 else:
@@ -675,7 +675,7 @@ def call_vlm_with_multiple_images(prompt: str, image_paths: List[str]) -> str:
                         usage.get("candidatesTokenCount", 0)
                     )
                 elif 500 <= response.status_code < 600 or response.status_code == 429:
-                    print(f"⚠️ Server error ({response.status_code}). Retrying...")
+                    print(f"[WARN] Server error ({response.status_code}). Retrying...")
                     # Note: Do NOT decrement attempt - rate limits count against max retries
                     raise Exception(f"Server error {response.status_code}")
                 else:
@@ -702,23 +702,23 @@ def call_vlm_with_multiple_images(prompt: str, image_paths: List[str]) -> str:
                 if response.status_code == 200:
                     result = response.json()["choices"][0]["message"]["content"]
                 elif 500 <= response.status_code < 600 or response.status_code == 429:
-                    print(f"⚠️ Server error ({response.status_code}). Retrying...")
+                    print(f"[WARN] Server error ({response.status_code}). Retrying...")
                     # Note: Do NOT decrement attempt - rate limits count against max retries
                     raise Exception(f"Server error {response.status_code}")
                 else:
                     raise Exception(f"HTTP {response.status_code}")
             
-            print(f"✅ VLM response received ({len(result)} chars)")
+            print(f"[OK] VLM response received ({len(result)} chars)")
             logging.info(f"VLM Response - {len(image_paths)} images")
             logging.info(f"VLM Response Content: {result}")
             logging.info("-" * 60)
             return result
                 
         except Exception as e:
-            print(f"⚠️ VLM call error (attempt {attempt}): {e}")
+            print(f"[WARN] VLM call error (attempt {attempt}): {e}")
         
         if attempt >= 3:
-            print(f"❌ VLM call failed after {attempt} attempts. Giving up.")
+            print(f"[ERROR] VLM call failed after {attempt} attempts. Giving up.")
             raise Exception(f"VLM call failed after {attempt} attempts")
             
         # Wait with exponential backoff (capped at 60 seconds)
@@ -731,7 +731,7 @@ def call_vlm_multi_images_ollama(prompt: str, image_paths: List[str]) -> str:
     Calls local Ollama with multiple images and a prompt.
     Uses message chaining strategy for correct image ordering in context.
     """
-    print(f"👁️ Calling VLM with {len(image_paths)} images (Ollama)...")
+    print(f"Calling VLM with {len(image_paths)} images (Ollama)...")
     
     url = "http://127.0.0.1:11434/api/chat"
     messages = []
@@ -747,9 +747,9 @@ def call_vlm_multi_images_ollama(prompt: str, image_paths: List[str]) -> str:
                     "images": [base64_img]
                 })
             except Exception as e:
-                print(f"⚠️ Failed to encode image {image_path}: {e}")
+                print(f"[WARN] Failed to encode image {image_path}: {e}")
         else:
-             print(f"⚠️ Image not found: {image_path}")
+             print(f"[WARN] Image not found: {image_path}")
     
     # Add the actual prompt as the final message
     messages.append({
@@ -771,10 +771,10 @@ def call_vlm_multi_images_ollama(prompt: str, image_paths: List[str]) -> str:
         response = requests.post(url, json=payload)
         response.raise_for_status()
         result = response.json()['message']['content']
-        print(f"✅ VLM response received ({len(result)} chars)")
+        print(f"[OK] VLM response received ({len(result)} chars)")
         return result
     except Exception as e:
-        print(f"❌ Ollama call failed: {e}")
+        print(f"[ERROR] Ollama call failed: {e}")
         if 'response' in locals():
             print(f"Response: {response.text}")
         return ""
@@ -800,7 +800,7 @@ def call_vlm_interweaved(prompt: str, chunks: List[Dict], use_cache: bool = True
             if cache:
                 cached = cache.get('vlm_interweaved', prompt, chunks, model=VLM_MODEL_NAME)
                 if cached is not None:
-                    print(f"📦 Cache hit for VLM call ({len(cached)} chars)")
+                    print(f"Cache hit for VLM call ({len(cached)} chars)")
                     return cached
         except ImportError:
             pass
@@ -965,7 +965,7 @@ def call_vlm_interweaved(prompt: str, chunks: List[Dict], use_cache: bool = True
                 else:
                     raise Exception(f"HTTP {response.status_code}")
             
-            print(f"✅ VLM response received ({len(result)} chars)")
+            print(f"[OK] VLM response received ({len(result)} chars)")
             logging.info(f"VLM Response - {len(chunks)} chunks")
             logging.info(f"VLM Response Content: {result}")
             logging.info("-" * 60)
@@ -983,10 +983,10 @@ def call_vlm_interweaved(prompt: str, chunks: List[Dict], use_cache: bool = True
             return result
                 
         except Exception as e:
-            print(f"⚠️ VLM call error (attempt {attempt}): {e}")
+            print(f"[WARN] VLM call error (attempt {attempt}): {e}")
         
         if attempt >= 3:
-            print(f"❌ VLM call failed after {attempt} attempts. Giving up.")
+            print(f"[ERROR] VLM call failed after {attempt} attempts. Giving up.")
             raise Exception(f"VLM call failed after {attempt} attempts")
             
         print(f"   Waiting {wait_time}s before retry...")
@@ -1126,7 +1126,7 @@ def call_vlm_interleaved_ollama(chunks: List[Dict], model: str = "qwen3-vl:32b",
         image_base_dir: Base directory for resolving relative image paths
         prompt: Optional instruction prompt to append after chunks
     """
-    print(f"👁️ Calling VLM interleaved (Ollama) with {len(chunks)} chunks...")
+    print(f"Calling VLM interleaved (Ollama) with {len(chunks)} chunks...")
     
     # Local Ollama endpoint
     url = "http://127.0.0.1:11434/api/chat"
@@ -1155,9 +1155,9 @@ def call_vlm_interleaved_ollama(chunks: List[Dict], model: str = "qwen3-vl:32b",
                     try:
                         msg["images"] = [encode_image_to_base64(img_path)]
                     except Exception as e:
-                         print(f"⚠️ Failed to encode image {img_path}: {e}")
+                         print(f"[WARN] Failed to encode image {img_path}: {e}")
                 else:
-                    print(f"⚠️ Image not found: {img_path}")
+                    print(f"[WARN] Image not found: {img_path}")
         
         messages.append(msg)
             
@@ -1184,13 +1184,13 @@ def call_vlm_interleaved_ollama(chunks: List[Dict], model: str = "qwen3-vl:32b",
         response.raise_for_status()
         result = response.json()['message']['content']
         
-        print(f"✅ VLM response received ({len(result)} chars)")
+        print(f"[OK] VLM response received ({len(result)} chars)")
         logging.info(f"VLM Response (Ollama Interleaved) - {len(result)} chars")
         
         return result
         
     except Exception as e:
-        print(f"❌ Ollama call failed: {e}")
+        print(f"[ERROR] Ollama call failed: {e}")
         if 'response' in locals():
             print(f"Response: {response.text}")
         return ""
@@ -1394,7 +1394,7 @@ def get_rate_limiter() -> RateLimiter:
             requests_per_minute=GEMINI_RPM,
             burst_size=GEMINI_BURST
         )
-        print(f"⚡ Rate limiter initialized: {GEMINI_RPM} RPM, burst={GEMINI_BURST}")
+        print(f"Rate limiter initialized: {GEMINI_RPM} RPM, burst={GEMINI_BURST}")
     return _rate_limiter
 
 
@@ -1751,28 +1751,28 @@ def batch_call_llm(prompts: List[str], show_progress: bool = True,
                 if len(miss_indices) < len(prompts):
                     cache_hits = len(prompts) - len(miss_indices)
                     if show_progress:
-                        print(f"📦 Cache: {cache_hits}/{len(prompts)} hits, {len(miss_indices)} API calls needed")
+                        print(f"Cache: {cache_hits}/{len(prompts)} hits, {len(miss_indices)} API calls needed")
         except ImportError:
             pass
     
     # If all cached, return immediately
     if not miss_indices:
         if show_progress:
-            print(f"📦 All {len(prompts)} responses found in cache!")
+            print(f"All {len(prompts)} responses found in cache!")
         return cached_responses
     
     # Only process uncached requests
     uncached_prompts = [prompts[i] for i in miss_indices]
     
     if show_progress:
-        print(f"⚡ Batch LLM: Processing {len(uncached_prompts)} requests (RPM={GEMINI_RPM}, burst={GEMINI_BURST})...")
+        print(f"Batch LLM: Processing {len(uncached_prompts)} requests (RPM={GEMINI_RPM}, burst={GEMINI_BURST})...")
     
     start_time = time.time()
     uncached_results = _run_async_batch(_batch_llm_calls_async(uncached_prompts))
     elapsed = time.time() - start_time
     
     if show_progress:
-        print(f"✅ Batch LLM: Completed {len(uncached_prompts)} requests in {elapsed:.1f}s "
+        print(f"[OK] Batch LLM: Completed {len(uncached_prompts)} requests in {elapsed:.1f}s "
               f"({len(uncached_prompts)/max(0.1, elapsed):.1f} req/s)")
     
     # Cache new results and merge with cached
@@ -1821,28 +1821,28 @@ def batch_call_vlm_interweaved(requests: List[Tuple[str, List[Dict]]],
                 if len(miss_indices) < len(requests):
                     cache_hits = len(requests) - len(miss_indices)
                     if show_progress:
-                        print(f"📦 Cache: {cache_hits}/{len(requests)} hits, {len(miss_indices)} API calls needed")
+                        print(f"Cache: {cache_hits}/{len(requests)} hits, {len(miss_indices)} API calls needed")
         except ImportError:
             pass
     
     # If all cached, return immediately
     if not miss_indices:
         if show_progress:
-            print(f"📦 All {len(requests)} responses found in cache!")
+            print(f"All {len(requests)} responses found in cache!")
         return cached_responses
     
     # Only process uncached requests
     uncached_requests = [requests[i] for i in miss_indices]
     
     if show_progress:
-        print(f"⚡ Batch VLM: Processing {len(uncached_requests)} requests (RPM={GEMINI_RPM}, burst={GEMINI_BURST})...")
+        print(f"Batch VLM: Processing {len(uncached_requests)} requests (RPM={GEMINI_RPM}, burst={GEMINI_BURST})...")
     
     start_time = time.time()
     uncached_results = _run_async_batch(_batch_vlm_calls_async(uncached_requests))
     elapsed = time.time() - start_time
     
     if show_progress:
-        print(f"✅ Batch VLM: Completed {len(uncached_requests)} requests in {elapsed:.1f}s "
+        print(f"[OK] Batch VLM: Completed {len(uncached_requests)} requests in {elapsed:.1f}s "
               f"({len(uncached_requests)/max(0.1, elapsed):.1f} req/s)")
     
     # Cache new results and merge with cached
@@ -2028,7 +2028,7 @@ def batch_call_vlm_base64(requests: List[Tuple[str, str, str]],
         return []
     
     if show_progress:
-        print(f"⚡ Batch VLM (base64): Processing {len(requests)} requests "
+        print(f"Batch VLM (base64): Processing {len(requests)} requests "
               f"(RPM={GEMINI_RPM}, burst={GEMINI_BURST})...")
     
     start_time = time.time()
@@ -2037,7 +2037,7 @@ def batch_call_vlm_base64(requests: List[Tuple[str, str, str]],
     
     if show_progress:
         success_count = sum(1 for r in results if not r.startswith("ERROR:"))
-        print(f"✅ Batch VLM (base64): Completed {success_count}/{len(requests)} "
+        print(f"[OK] Batch VLM (base64): Completed {success_count}/{len(requests)} "
               f"in {elapsed:.1f}s ({len(requests)/elapsed:.1f} req/s)")
     
     return results

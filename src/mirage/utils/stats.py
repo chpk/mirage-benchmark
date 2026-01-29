@@ -551,7 +551,7 @@ def print_qa_category_stats(stats: Dict[str, Any]) -> None:
     """Print formatted QA category statistics."""
     total = stats.get('total_qa_pairs', 0)
     if total == 0:
-        print("\n⚠️ No QA pairs to analyze")
+        print("\n[WARN] No QA pairs to analyze")
         return
     
     print("\n" + "=" * 60)

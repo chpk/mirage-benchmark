@@ -232,7 +232,7 @@ def build_example_graph():
             "id": "bridge_0",
             "kw1": "kw_0_1",  # chicken broth
             "kw2": "kw_1_2",  # stocks/broths from animal tissue
-            "relation": "poultry origin → animal tissue",
+            "relation": "poultry origin -> animal tissue",
             "description": '"chicken broth" ↔ "stocks/broths derived from animal tissue" via poultry origin'
         },
         {
@@ -249,7 +249,7 @@ def build_example_graph():
         nodes.append(Node(
             id=bridge["id"],
             type="bridge",
-            label=f"🔗 {truncate(bridge['relation'], 20)}",
+            label=f"Link: {truncate(bridge['relation'], 20)}",
             full_text=f"Bridge Keyword Chain:\n{bridge['description']}",
             x=7.8, y=y_pos,
             color=COLORS["bridge"],
@@ -333,7 +333,7 @@ def build_example_graph():
     nodes.append(Node(
         id=dedup_qa["id"],
         type="dedup_qa",
-        label=f"✓ Dedup: {truncate(dedup_qa['question'], 25)}",
+        label=f"[OK] Dedup: {truncate(dedup_qa['question'], 25)}",
         full_text=f"[DEDUPLICATED & REFINED QA]\n\nQ: {dedup_qa['question']}\n\nA: {dedup_qa['answer']}",
         x=12.8, y=0,
         color=COLORS["dedup_qa"],
@@ -703,30 +703,30 @@ def create_detailed_html_page():
 <body>
     <div class="container">
         <header>
-            <h1>🔗 Multihop QA Generation Pipeline</h1>
+            <h1>Multihop QA Generation Pipeline</h1>
             <p>Visualizing the reasoning chain from source chunks to synthesized question-answer pairs</p>
         </header>
         
         <div class="pipeline-flow">
             <span class="flow-step">Source Chunk</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Queries (≥1)</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Retrieved Chunks (≥1)</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Context</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Keywords (≥1)</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Keyword Chains (≥1)</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Generated QA (≥1)</span>
-            <span class="flow-arrow">→</span>
+            <span class="flow-arrow">-></span>
             <span class="flow-step">Deduplication</span>
         </div>
         
         <div class="card">
-            <h2>📊 Interactive Pipeline Graph</h2>
+            <h2>Interactive Pipeline Graph</h2>
             <p style="color:#888; margin-bottom:16px; font-size:0.9rem;">Hover over nodes to see full text content. Zoom and pan to explore.</p>
             <div class="graph-container">
                 {fig_html}
@@ -734,7 +734,7 @@ def create_detailed_html_page():
         </div>
         
         <div class="card">
-            <h2>📋 Example: Food Safety Officer - Vegetarian Certification Audit</h2>
+            <h2>Example: Food Safety Officer - Vegetarian Certification Audit</h2>
             
             <div class="stats">
                 <div class="stat"><div class="num">1</div><div class="label">Source Chunk</div></div>
@@ -747,7 +747,7 @@ def create_detailed_html_page():
             
             <div class="example-section" style="margin-top: 20px;">
                 <div class="chunk-box">
-                    <div class="label">📄 Source Chunk (Bistro Menu)</div>
+                    <div class="label">Source Chunk (Bistro Menu)</div>
                     The "Autumn Harvest Risotto" is a creamy dish featuring Arborio rice, butternut squash, aged parmesan cheese, and is slow-cooked in a <strong>house-made chicken broth</strong>.
                     <div class="keyword-list">
                         <span class="keyword">Autumn Harvest Risotto</span>
@@ -757,7 +757,7 @@ def create_detailed_html_page():
                 </div>
                 
                 <div class="chunk-box retrieved">
-                    <div class="label">📥 Retrieved Chunk [EXPLANATORY]</div>
+                    <div class="label">Retrieved Chunk [EXPLANATORY]</div>
                     To qualify for the "Green-Leaf Vegetarian Label," a dish must be entirely free of meat, poultry, and seafood flesh, including any <strong>stocks, broths, or gravies derived from animal tissue</strong>. Dairy and eggs are permitted.
                     <div class="keyword-list">
                         <span class="keyword">Green-Leaf Vegetarian Label</span>
@@ -768,7 +768,7 @@ def create_detailed_html_page():
             </div>
             
             <div class="bridge-box" style="margin-top: 16px;">
-                <div class="relation">🔗 Bridge Keyword Chain</div>
+                <div class="relation">Bridge Keyword Chain</div>
                 <p style="margin-top:8px;">"chicken broth" ↔ "stocks/broths derived from animal tissue" <br><em>via poultry origin</em></p>
             </div>
             
@@ -778,14 +778,14 @@ def create_detailed_html_page():
             </div>
             
             <div class="dedup-box" style="margin-top: 16px;">
-                <h4>✓ Deduplicated & Refined QA</h4>
+                <h4>[OK] Deduplicated & Refined QA</h4>
                 <p><strong>Q:</strong> According to the Green-Leaf Certification Guide, why does the "Autumn Harvest Risotto" fail to qualify for the "Green-Leaf Vegetarian Label", and what specific ingredient violates the certification requirements?</p>
                 <p style="margin-top:10px;"><strong>A:</strong> The "Autumn Harvest Risotto" fails to qualify because it is slow-cooked in house-made chicken broth. The Green-Leaf Certification Guide explicitly excludes dishes containing stocks, broths, or gravies derived from animal tissue. Since chicken broth is derived from poultry (animal tissue), the dish cannot receive vegetarian certification despite other ingredients like parmesan cheese and eggs being permitted.</p>
             </div>
         </div>
         
         <div class="card">
-            <h2>🔄 Pipeline Stages Explained</h2>
+            <h2>Pipeline Stages Explained</h2>
             <ol style="line-height: 2; color: #CCC; padding-left: 20px;">
                 <li><strong style="color:#2ECC71;">Source Chunk Analysis:</strong> Evaluate chunk for semantic completeness and extract concepts</li>
                 <li><strong style="color:#F1C40F;">Query Generation:</strong> If incomplete, generate ≥1 search queries to retrieve missing information</li>
@@ -810,15 +810,15 @@ def main():
     # Create main graph visualization
     fig = create_graph_visualization()
     fig.write_html("multihop_pipeline_graph.html")
-    print("✓ Saved: multihop_pipeline_graph.html")
+    print("[OK] Saved: multihop_pipeline_graph.html")
     
     # Create comprehensive dashboard
     html_content = create_detailed_html_page()
     with open("multihop_pipeline_dashboard.html", "w") as f:
         f.write(html_content)
-    print("✓ Saved: multihop_pipeline_dashboard.html")
+    print("[OK] Saved: multihop_pipeline_dashboard.html")
     
-    print("\n🎉 Visualizations generated successfully!")
+    print("\n[OK] Visualizations generated successfully!")
     print("   Open multihop_pipeline_dashboard.html for the complete experience.")
     print("   Hover over nodes to see full content in popup.")
 

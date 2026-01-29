@@ -141,7 +141,7 @@ def get_output_dir(base_output_dir: str, ablation_name: str) -> str:
 def run_pipeline(config_path: str, ablation_name: str) -> bool:
     """Run the main pipeline and return success status."""
     print(f"\n{'='*70}")
-    print(f"🚀 Running: {ablation_name}")
+    print(f"Running: {ablation_name}")
     print(f"{'='*70}\n")
     
     try:
@@ -153,14 +153,14 @@ def run_pipeline(config_path: str, ablation_name: str) -> bool:
         )
         
         if result.returncode == 0:
-            print(f"\n✅ {ablation_name}: COMPLETED SUCCESSFULLY")
+            print(f"\n[OK] {ablation_name}: COMPLETED SUCCESSFULLY")
             return True
         else:
-            print(f"\n❌ {ablation_name}: FAILED (exit code {result.returncode})")
+            print(f"\n[FAIL] {ablation_name}: FAILED (exit code {result.returncode})")
             return False
             
     except Exception as e:
-        print(f"\n❌ {ablation_name}: ERROR - {e}")
+        print(f"\n[ERROR] {ablation_name}: ERROR - {e}")
         return False
 
 
@@ -186,13 +186,13 @@ def create_summary_report(results: List[Dict], output_dir: str):
         f.write("-" * 70 + "\n\n")
         
         for result in results:
-            status = "✅ SUCCESS" if result['success'] else "❌ FAILED"
+            status = "[OK] SUCCESS" if result['success'] else "[FAIL] FAILED"
             f.write(f"{result['name']:20} {status}\n")
             f.write(f"  Description: {result['description']}\n")
             f.write(f"  Output Dir:  {result['output_dir']}\n")
             f.write(f"  Duration:    {result.get('duration', 'N/A')}\n\n")
     
-    print(f"\n📄 Summary report saved: {report_path}")
+    print(f"\nSummary report saved: {report_path}")
 
 
 def main():
@@ -234,18 +234,18 @@ Examples:
     if args.only:
         valid_names = [m['name'] for m in ABLATION_MODES]
         if args.only not in valid_names:
-            print(f"❌ Error: Unknown ablation mode '{args.only}'")
+            print(f"[ERROR] Unknown ablation mode '{args.only}'")
             print(f"   Valid modes: {', '.join(valid_names)}")
             return 1
     
     # Load original config
     config_path = args.config
     if not os.path.exists(config_path):
-        print(f"❌ Error: Config file not found: {config_path}")
+        print(f"[ERROR] Config file not found: {config_path}")
         return 1
     
     print("=" * 70)
-    print("🔬 UNIFIED ABLATION STUDY")
+    print("UNIFIED ABLATION STUDY")
     print("=" * 70)
     print(f"Config: {config_path}")
     print(f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -272,14 +272,14 @@ Examples:
     print("-" * 70)
     
     if args.dry_run:
-        print("\n🔍 DRY RUN - Would execute the following:")
+        print("\nDRY RUN - Would execute the following:")
         for mode in modes_to_run:
             output_dir = get_output_dir(base_output_dir, mode['name'])
             print(f"\n  [{mode['name']}]")
             print(f"    Description: {mode['description']}")
             print(f"    Output: {output_dir}")
             print(f"    Config changes: {mode['config_changes']}")
-        print("\n✅ Dry run complete. Use without --dry-run to execute.")
+        print("\n[OK] Dry run complete. Use without --dry-run to execute.")
         return 0
     
     # Run each ablation mode
@@ -305,8 +305,8 @@ Examples:
             # Save modified config
             save_config(config, config_path)
             
-            print(f"\n📁 Output: {output_dir}")
-            print(f"📝 Mode: {mode['description']}")
+            print(f"\nOutput: {output_dir}")
+            print(f"Mode: {mode['description']}")
             
             # Run the pipeline
             success = run_pipeline(config_path, mode['name'])
@@ -323,7 +323,7 @@ Examples:
             })
             
     except KeyboardInterrupt:
-        print("\n\n⚠️  Ablation study interrupted by user")
+        print("\n\n[WARN] Ablation study interrupted by user")
         
     finally:
         # Restore original config
@@ -331,7 +331,7 @@ Examples:
         print("Restoring original configuration...")
         shutil.copy2(backup_path, config_path)
         os.remove(backup_path)
-        print("✅ Original config restored")
+        print("[OK] Original config restored")
     
     # Generate summary report
     if results:
@@ -346,7 +346,7 @@ Examples:
         print(f"\nResults: {successful}/{len(results)} successful")
         
         for r in results:
-            status = "✅" if r['success'] else "❌"
+            status = "[OK]" if r['success'] else "[FAIL]"
             print(f"  {status} {r['name']:20} ({r['duration']})")
         
         print(f"\nResults saved in: {base_output_dir}/")

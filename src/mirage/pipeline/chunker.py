@@ -81,7 +81,7 @@ def parse_chunks_from_response(response: str) -> List[Dict]:
             })
         else:
             logging.warning(f"Skipping malformed chunk block with {len(parts)} parts (expected 5+). Block preview: {block[:200]}")
-            print(f"⚠️ Skipping malformed chunk block with {len(parts)} parts")
+            print(f"[WARN] Skipping malformed chunk block with {len(parts)} parts")
     
     return chunks
 
@@ -143,8 +143,8 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
     Returns:
         tuple: (list of chunks, dict of window queries and responses)
     """
-    print(f"📄 Document size: {len(markdown_text):,} characters")
-    print(f"🔧 Window: {WINDOW_SIZE:,} chars, Overlap: {OVERLAP_SIZE:,} chars")
+    print(f"Document size: {len(markdown_text):,} characters")
+    print(f"Window: {WINDOW_SIZE:,} chars, Overlap: {OVERLAP_SIZE:,} chars")
     
     all_chunks = []
     position = 0
@@ -163,7 +163,7 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
         
         # If we have an incomplete chunk from previous window, merge it
         if incomplete_chunk:
-            print(f"\n🔗 Merging incomplete chunk from previous window...")
+            print(f"\nMerging incomplete chunk from previous window...")
             print(f"   Incomplete chunk content length: {len(incomplete_chunk['content']):,} chars")
             print(f"   New window text length: {len(window_text):,} chars")
             
@@ -172,7 +172,7 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
             overlap_end = find_overlap(incomplete_chunk['content'], window_text)
             
             if overlap_end > 0:
-                print(f"   ✅ Found overlap at position {overlap_end} (expected around 0-{OVERLAP_SIZE*2})")
+                print(f"   [OK] Found overlap at position {overlap_end} (expected around 0-{OVERLAP_SIZE*2})")
                 
                 # Debug: Show what's being merged
                 overlap_text = window_text[:overlap_end]
@@ -187,7 +187,7 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
                 window_text = incomplete_chunk['content'] + window_text[overlap_end:]
                 print(f"   Merged text length: {len(window_text):,} chars (incomplete: {len(incomplete_chunk['content'])}, continuation: {len(continuation)})")
             else:
-                print(f"   ⚠️ No overlap found (searched first {OVERLAP_SIZE*2} chars)")
+                print(f"   [WARN] No overlap found (searched first {OVERLAP_SIZE*2} chars)")
                 print(f"   Debug: Last 100 chars of incomplete: ...{incomplete_chunk['content'][-100:]}")
                 print(f"   Debug: First 100 chars of new window: {window_text[:100]}")
                 # No overlap, just prepend
@@ -195,7 +195,7 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
             
             incomplete_chunk = None  # Reset
         
-        print(f"\n🔄 Processing window {window_num} (pos {position:,} - {window_end:,})")
+        print(f"\nProcessing window {window_num} (pos {position:,} - {window_end:,})")
         
         # Call LLM with the semantic chunking prompt
         try:
@@ -209,12 +209,12 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
                 'response': response
             }
             logging.info(f"Window {window_num}: Query {len(window_text)} chars, Response {len(response)} chars")
-            print(f"📝 Stored query ({len(window_text)} chars) and response ({len(response)} chars)")
+            print(f"Stored query ({len(window_text)} chars) and response ({len(response)} chars)")
             
             # Check for empty response
             if not response or not response.strip():
                 logging.warning(f"Empty response from LLM for window {window_num}")
-                print(f"⚠️ Empty response from LLM for window {window_num}, skipping...")
+                print(f"[WARN] Empty response from LLM for window {window_num}, skipping...")
                 incomplete_chunk = None
                 # Move to next window
                 if window_end >= len(markdown_text):
@@ -224,7 +224,7 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
             
             # Parse chunks from response
             window_chunks = parse_chunks_from_response(response)
-            print(f"✅ Parsed {len(window_chunks)} chunks from window {window_num}")
+            print(f"[OK] Parsed {len(window_chunks)} chunks from window {window_num}")
             
             # Print character and word count for each chunk
             for idx, chunk in enumerate(window_chunks, 1):
@@ -237,25 +237,25 @@ def chunk_with_windows(markdown_text: str) -> Tuple[List[Dict], Dict[int, Dict[s
             if window_chunks and window_chunks[-1]['status'].upper() == 'INCOMPLETE':
                 incomplete_chunk = window_chunks[-1]
                 window_chunks = window_chunks[:-1]  # Don't add incomplete chunk yet
-                print(f"   ⚠️ Last chunk marked INCOMPLETE, will merge with next window")
+                print(f"   [WARN] Last chunk marked INCOMPLETE, will merge with next window")
             
             all_chunks.extend(window_chunks)
             
         except Exception as e:
-            print(f"❌ Error processing window {window_num}: {e}")
+            print(f"[ERROR] Error processing window {window_num}: {e}")
             incomplete_chunk = None  # Reset on error
         
         # Move to next window with overlap
         if window_end >= len(markdown_text):
             # End of document - add incomplete chunk if any
             if incomplete_chunk:
-                print(f"   📝 Adding final incomplete chunk as-is")
+                print(f"   Adding final incomplete chunk as-is")
                 all_chunks.append(incomplete_chunk)
             break
         
         position = window_end - OVERLAP_SIZE
     
-    print(f"\n✅ Total chunks from all windows: {len(all_chunks)}")
+    print(f"\n[OK] Total chunks from all windows: {len(all_chunks)}")
     return all_chunks, queries_responses
 
 def renumber_chunks(chunks: List[Dict], file_name: str) -> List[Dict]:
@@ -268,7 +268,7 @@ def renumber_chunks(chunks: List[Dict], file_name: str) -> List[Dict]:
         chunk['chunk_id'] = str(i)
         chunk.update({k: v for k, v in original.items() if k != 'chunk_id'})
     
-    print(f"🔢 Renumbered {len(chunks)} chunks and added file name")
+    print(f"Renumbered {len(chunks)} chunks and added file name")
     return chunks
 
 
@@ -279,7 +279,7 @@ def export_to_json(chunks: List[Dict], output_path: Path):
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(chunks, f, indent=2, ensure_ascii=False)
     
-    print(f"💾 Saved {len(chunks)} chunks to {output_path}")
+    print(f"Saved {len(chunks)} chunks to {output_path}")
 
 
 def print_summary(chunks: List[Dict]):
@@ -295,15 +295,15 @@ def print_summary(chunks: List[Dict]):
         status_counts[status] = status_counts.get(status, 0) + 1
     
     print("\n" + "="*60)
-    print("📊 CHUNKING SUMMARY")
+    print("CHUNKING SUMMARY")
     print("="*60)
     print(f"Total chunks: {len(chunks)}")
     print(f"\nBy type:")
     for ctype, count in sorted(type_counts.items()):
-        print(f"  • {ctype}: {count}")
+        print(f"  - {ctype}: {count}")
     print(f"\nBy status:")
     for status, count in sorted(status_counts.items()):
-        print(f"  • {status}: {count}")
+        print(f"  - {status}: {count}")
     
     # Calculate and print average word count
     total_words = 0
@@ -341,7 +341,7 @@ def process_single_file(input_path: Path, output_dir: Path) -> Dict:
             result['error'] = f"File not found: {input_path}"
             return result
         
-        print(f"\n📖 Processing: {input_path.name}")
+        print(f"\nProcessing: {input_path.name}")
         markdown_text = input_path.read_text(encoding='utf-8')
         
         # Chunk with windows
@@ -364,11 +364,11 @@ def process_single_file(input_path: Path, output_dir: Path) -> Dict:
         
         result['success'] = True
         result['chunks_count'] = len(chunks)
-        print(f"✅ {input_path.name}: {len(chunks)} chunks")
+        print(f"[OK] {input_path.name}: {len(chunks)} chunks")
         
     except Exception as e:
         result['error'] = str(e)
-        print(f"❌ {input_path.name}: Error - {e}")
+        print(f"[ERROR] {input_path.name}: Error - {e}")
     
     return result
 
@@ -386,10 +386,10 @@ def process_files_parallel(input_files: List[Path], output_dir: Path,
         List of result dicts from process_single_file
     """
     if not input_files:
-        print("❌ No files to process")
+        print("[ERROR] No files to process")
         return []
     
-    print(f"\n🚀 Processing {len(input_files)} files with {max_workers} parallel workers")
+    print(f"\nProcessing {len(input_files)} files with {max_workers} parallel workers")
     print("="*60)
     
     results = []
@@ -420,7 +420,7 @@ def process_files_parallel(input_files: List[Path], output_dir: Path,
     
     # Print summary
     print("\n" + "="*60)
-    print("📊 PARALLEL CHUNKING SUMMARY")
+    print("PARALLEL CHUNKING SUMMARY")
     print("="*60)
     successful = [r for r in results if r['success']]
     failed = [r for r in results if not r['success']]
@@ -432,9 +432,9 @@ def process_files_parallel(input_files: List[Path], output_dir: Path,
     print(f"Total chunks generated: {total_chunks}")
     
     if failed:
-        print("\n❌ Failed files:")
+        print("\n[ERROR] Failed files:")
         for r in failed:
-            print(f"   • {Path(r['file']).name}: {r['error']}")
+            print(f"   - {Path(r['file']).name}: {r['error']}")
     
     print("="*60)
     
@@ -478,8 +478,8 @@ def main(input_path: Optional[str] = None, output_dir: Optional[str] = None,
     # Setup logging
     setup_logging()
     
-    print("🚀 Starting Simple Semantic Chunking")
-    print(f"🤖 Using model: {LLM_MODEL_NAME}")
+    print("Starting Simple Semantic Chunking")
+    print(f"Using model: {LLM_MODEL_NAME}")
     
     # Determine input path
     if input_path is None:
@@ -494,10 +494,10 @@ def main(input_path: Optional[str] = None, output_dir: Optional[str] = None,
     input_files = get_markdown_files(input_path)
     
     if not input_files:
-        print(f"❌ No markdown files found at: {input_path}")
+        print(f"[ERROR] No markdown files found at: {input_path}")
         return
     
-    print(f"📂 Found {len(input_files)} markdown file(s)")
+    print(f"Found {len(input_files)} markdown file(s)")
     
     # Process files
     if len(input_files) == 1:
@@ -510,14 +510,14 @@ def main(input_path: Optional[str] = None, output_dir: Optional[str] = None,
         results = process_files_parallel(input_files, output_path, max_workers)
     else:
         # Multiple files - process sequentially
-        print(f"\n🔄 Processing {len(input_files)} files sequentially...")
+        print(f"\nProcessing {len(input_files)} files sequentially...")
         for input_file in tqdm(input_files, desc="Chunking files"):
             file_output_dir = output_path / input_file.stem
             process_single_file(input_file, file_output_dir)
     
-    print("\n✅ Processing complete!")
-    print(f"📁 Output directory: {output_path}")
-    print(f"   • Log file: {call_llm.LOG_FILE if hasattr(call_llm, 'LOG_FILE') else 'N/A'}")
+    print("\n[OK] Processing complete!")
+    print(f"Output directory: {output_path}")
+    print(f"   - Log file: {call_llm.LOG_FILE if hasattr(call_llm, 'LOG_FILE') else 'N/A'}")
 
 
 def print_summary_from_file(chunks_file: Path):

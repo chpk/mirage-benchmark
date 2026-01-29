@@ -22,10 +22,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 class CheckStatus(Enum):
-    PASS = "✅ PASS"
-    FAIL = "❌ FAIL"
-    WARN = "⚠️ WARN"
-    SKIP = "⏭️ SKIP"
+    PASS = "[PASS]"
+    FAIL = "[FAIL]"
+    WARN = "[WARN]"
+    SKIP = "[SKIP]"
 
 
 @dataclass
@@ -576,7 +576,7 @@ def run_preflight_checks(
     
     if not quiet:
         print("\n" + "=" * 70)
-        print("🔍 PREFLIGHT CHECKS - Validating all services before execution")
+        print("PREFLIGHT CHECKS - Validating all services before execution")
         print("=" * 70 + "\n")
     
     for name, check_func, is_expensive in checks:
@@ -605,7 +605,7 @@ def run_preflight_checks(
     
     if not quiet:
         print("\n" + "=" * 70)
-        print("📋 PREFLIGHT CHECK SUMMARY")
+        print("PREFLIGHT CHECK SUMMARY")
         print("=" * 70)
         print(f"\n  Results: {passed} passed, {failed} failed, {warned} warnings, {skipped} skipped\n")
         
@@ -636,23 +636,23 @@ def run_preflight_checks(
         config_result = next((r for r in results if r.name == "Configuration"), None)
         if config_result and config_result.status == CheckStatus.PASS:
             d = config_result.details
-            print(f"\n  📌 Active Configuration:")
-            print(f"     • Backend:    {d.get('backend', 'N/A')}")
-            print(f"     • LLM Model:  {d.get('llm_model', 'N/A')}")
-            print(f"     • VLM Model:  {d.get('vlm_model', 'N/A')}")
-            print(f"     • Embeddings: {d.get('embedding_model', 'N/A')}")
-            print(f"     • Output Dir: {d.get('output_dir', 'N/A')}")
+            print(f"\n  Active Configuration:")
+            print(f"     - Backend:    {d.get('backend', 'N/A')}")
+            print(f"     - LLM Model:  {d.get('llm_model', 'N/A')}")
+            print(f"     - VLM Model:  {d.get('vlm_model', 'N/A')}")
+            print(f"     - Embeddings: {d.get('embedding_model', 'N/A')}")
+            print(f"     - Output Dir: {d.get('output_dir', 'N/A')}")
         
         print("\n" + "=" * 70)
         
         if all_passed:
-            print("✅ ALL CHECKS PASSED - Ready to start pipeline execution")
+            print("[OK] ALL CHECKS PASSED - Ready to start pipeline execution")
         else:
-            print("❌ PREFLIGHT CHECKS FAILED - Fix issues before proceeding")
+            print("[FAIL] PREFLIGHT CHECKS FAILED - Fix issues before proceeding")
             print("\n   Failed checks:")
             for result in results:
                 if result.status == CheckStatus.FAIL:
-                    print(f"   • {result.name}: {result.message}")
+                    print(f"   - {result.name}: {result.message}")
         
         print("=" * 70 + "\n")
     
@@ -664,7 +664,7 @@ def require_preflight_checks() -> bool:
     all_passed, results = run_preflight_checks()
     
     if not all_passed:
-        print("\n🛑 STOPPING: Preflight checks failed. Fix the issues above before running the pipeline.")
+        print("\nSTOPPING: Preflight checks failed. Fix the issues above before running the pipeline.")
         print("   This prevents wasted LLM API calls on a misconfigured system.\n")
         sys.exit(1)
     

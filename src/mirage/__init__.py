@@ -3,19 +3,38 @@ MiRAGE: Multimodal Multihop RAG Evaluation Dataset Generator
 
 A multi-agent framework for generating high-quality, multimodal, multihop
 question-answer datasets for evaluating Retrieval-Augmented Generation (RAG) systems.
+
+Quick Start (Library API):
+    >>> from mirage import MiRAGE
+    >>> pipeline = MiRAGE(
+    ...     input_dir="data/my_docs",
+    ...     output_dir="output/results",
+    ...     backend="gemini",
+    ...     api_key="your-gemini-key",
+    ... )
+    >>> results = pipeline.run()
+    >>> results.save("my_dataset.json")
+
+Quick Start (CLI):
+    $ run_mirage --input data/my_docs --output output/results --backend gemini --api-key YOUR_KEY
 """
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 __author__ = "MiRAGE Authors"
+
+# =============================================================================
+# High-Level API (always available, no heavy imports)
+# =============================================================================
+from mirage.api import MiRAGE, MiRAGEConfig, MiRAGEResults
 
 
 def __getattr__(name):
     """Lazy import of submodules to avoid import-time config loading.
     
-    This allows `from mirage import __version__` to work without a config file,
+    This allows `from mirage import MiRAGE` to work without a config file,
     while still providing convenient access to submodules when needed.
     """
-    # Main pipeline entry point
+    # Main pipeline entry point (low-level)
     if name == "run_pipeline":
         from mirage import main
         return main.run_pipeline
@@ -56,16 +75,28 @@ def __getattr__(name):
         from mirage.utils import preflight
         return preflight.run_preflight_checks
     
+    # Device utilities
+    if name in ("get_device", "is_gpu_available", "setup_device_environment"):
+        from mirage.utils import device
+        return getattr(device, name)
+    
     raise AttributeError(f"module 'mirage' has no attribute '{name}'")
 
 
 __all__ = [
-    # Version info
+    # === High-Level API (recommended) ===
+    "MiRAGE",
+    "MiRAGEConfig",
+    "MiRAGEResults",
+    
+    # === Version ===
     "__version__",
     "__author__",
-    # Main entry point
+    
+    # === Low-level pipeline (advanced users) ===
     "run_pipeline",
-    # Core LLM functions (lazy loaded)
+    
+    # === Core LLM functions (lazy loaded) ===
     "call_llm_simple",
     "call_vlm_interweaved",
     "call_vlm_with_multiple_images",
@@ -74,17 +105,24 @@ __all__ = [
     "BACKEND",
     "LLM_MODEL_NAME",
     "VLM_MODEL_NAME",
-    # Config
+    
+    # === Config ===
     "load_config",
     "get_config_value",
-    # Embeddings
+    
+    # === Embeddings ===
     "get_best_embedding_model",
     "NomicVLEmbed",
-    # Pipeline
+    
+    # === Pipeline ===
     "generate_qa_for_chunk",
     "build_complete_context",
     "fetch_domain_and_role",
     "deduplicate_qa_pairs",
-    # Utils
+    
+    # === Utils ===
     "run_preflight_checks",
+    "get_device",
+    "is_gpu_available",
+    "setup_device_environment",
 ]

@@ -99,45 +99,88 @@ pip install mirage-benchmark
 pip install mirage-benchmark
 ```
 
-### Step 2: Set Up API Key
+### Step 2: Python Library API (Recommended)
 
-Choose one of the following backends:
+Use MiRAGE directly in your Python scripts - just like HuggingFace Transformers or OpenAI:
 
-**Option A: Google Gemini (Recommended)**
-```bash
-export GEMINI_API_KEY="your-gemini-api-key"
+```python
+from mirage import MiRAGE
+
+# Create and run pipeline
+pipeline = MiRAGE(
+    input_dir="data/my_documents",
+    output_dir="output/my_dataset",
+    backend="gemini",
+    api_key="your-gemini-api-key",
+    num_qa_pairs=50,
+)
+results = pipeline.run()
+
+# Access results
+print(f"Generated {len(results)} QA pairs")
+for qa in results:
+    print(f"Q: {qa['question']}")
+    print(f"A: {qa['answer']}\n")
+
+# Save results
+results.save("my_dataset.json")
+
+# Convert to pandas DataFrame
+df = results.to_dataframe()
+df.to_csv("my_dataset.csv")
 ```
 
-**Option B: OpenAI**
-```bash
-export OPENAI_API_KEY="your-openai-api-key"
+**Advanced Configuration:**
+
+```python
+from mirage import MiRAGE
+
+# Full control over pipeline
+pipeline = MiRAGE(
+    input_dir="data/papers",
+    output_dir="output/papers_qa",
+    backend="gemini",
+    api_key="your-key",
+    num_qa_pairs=200,
+    max_depth=3,
+    max_breadth=5,
+    embedding_model="nomic",        # "auto", "nomic", "bge_m3", "gemini"
+    reranker_model="gemini_vlm",    # "gemini_vlm", "monovlm", "text_embedding"
+    device="cuda:0",                # "cuda", "cuda:0", "cpu", or None (auto)
+    max_workers=8,
+    run_deduplication=True,
+    run_evaluation=True,
+)
+
+# Or load from config file
+pipeline = MiRAGE.from_config("config.yaml", num_qa_pairs=100)
+
+# Method chaining
+results = pipeline.configure(num_qa_pairs=50).run()
 ```
 
-**Option C: Local Ollama (No API key needed)**
-```bash
-# Install and start Ollama
-ollama serve
-ollama pull llama3
+**Load existing results:**
+
+```python
+from mirage import MiRAGEResults
+
+results = MiRAGEResults.load("output/qa_multihop_pass.json")
+print(f"Loaded {len(results)} QA pairs")
+df = results.to_dataframe()
 ```
 
-### Step 3: Prepare Your Data
+### Step 3: CLI Usage (Alternative)
 
-Place your documents in a folder:
-```bash
-mkdir -p data/my_documents
-cp /path/to/your/*.pdf data/my_documents/
-```
-
-### Step 4: Run MiRAGE
-
-After pip installation, use the `run_mirage` command:
+You can also use MiRAGE from the command line:
 
 ```bash
-# Basic usage with Gemini (default backend) - API key from environment
+# Set API key
 export GEMINI_API_KEY="your-gemini-key"
-run_mirage --input data/my_documents --output output/my_dataset --num-qa-pairs 1
 
-# Using Gemini with API key as argument
+# Basic usage
+run_mirage --input data/my_documents --output output/my_dataset --num-qa-pairs 10
+
+# With API key as argument
 run_mirage -i data/my_documents -o output/my_dataset --backend gemini --api-key YOUR_GEMINI_KEY
 
 # Using OpenAI
@@ -145,6 +188,9 @@ run_mirage -i data/my_documents -o output/my_dataset --backend openai --api-key 
 
 # Using local Ollama (no API key needed)
 run_mirage -i data/my_documents -o output/my_dataset --backend ollama
+
+# Generate a config file for full customization
+run_mirage --init-config
 ```
 
 **Note**: When using `--api-key`, always specify `--backend` to indicate which service the key is for.

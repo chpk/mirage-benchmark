@@ -77,7 +77,7 @@ DEMO_TEMP_DIR.mkdir(parents=True, exist_ok=True)
 app = FastAPI(
     title="MiRAGE Demo API",
     description="Backend API for MiRAGE QA Dataset Generation Demo",
-    version="1.3.1"
+    version="1.4.0"
 )
 
 # Enable CORS for Gradio frontend
@@ -341,7 +341,7 @@ async def root():
     """Health check endpoint."""
     return {
         "service": "MiRAGE Demo API",
-        "version": "1.3.1",
+        "version": "1.4.0",
         "status": "running",
         "limits": {
             "max_pages": DEMO_MAX_PAGES,

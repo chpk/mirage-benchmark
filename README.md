@@ -41,7 +41,11 @@ Explore the step-by-step multihop QA generation process:
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Usage](#usage)
+  - [Python Library (Recommended)](#python-library-recommended)
+  - [Command Line (CLI)](#command-line-cli)
+- [Python API Reference](#python-api-reference)
+- [Examples](#examples)
+- [Usage (CLI)](#usage-cli)
 - [API Keys Setup](#api-keys-setup)
 - [Configuration](#configuration)
 - [Command Line Options](#command-line-options)
@@ -222,7 +226,7 @@ run_mirage --preflight
 run_mirage --input data/sample --output results/test --num-qa-pairs 1
 ```
 
-## Usage
+## Usage (CLI)
 
 ### Basic Usage (QA Generation Only)
 
@@ -521,7 +525,8 @@ See the [Interactive Process Flow](#interactive-process-flow) at the top of this
 ```
 MiRAGE/
 ├── src/mirage/                    # Main package
-│   ├── __init__.py               # Package initialization
+│   ├── __init__.py               # Package initialization (exports MiRAGE, MiRAGEConfig, MiRAGEResults)
+│   ├── api.py                    # High-level Python API (MiRAGE class)
 │   ├── main.py                   # Pipeline orchestration
 │   ├── cli.py                    # Command-line interface
 │   ├── core/                     # Core functionality
@@ -547,9 +552,18 @@ MiRAGE/
 │       ├── stats.py              # Dataset statistics
 │       ├── ablation.py           # Ablation studies
 │       ├── checkpoint.py         # Checkpoint/resume support
+│       ├── device.py             # Centralized GPU/CPU device management
 │       ├── llm_cache.py          # LLM response caching
 │       ├── visualize_multihop.py # Multihop QA visualization
 │       └── visualize_pipeline.py # Pipeline flow visualization
+├── examples/                      # Ready-to-run sample scripts
+│   ├── 01_quick_start.py         # Minimal quick start
+│   ├── 02_advanced_config.py     # Full configuration
+│   ├── 03_from_config_file.py    # YAML-based config
+│   ├── 04_results_analysis.py    # Load, filter, export results
+│   ├── 05_openai_backend.py      # Using OpenAI
+│   └── 06_method_chaining.py     # Fluent API
+├── demo/                          # Interactive demo (Gradio + FastAPI)
 ├── data/documents/               # Input documents folder
 ├── output/                       # Generated results
 ├── assets/                       # Documentation images
@@ -563,101 +577,206 @@ MiRAGE/
 └── LICENSE                       # Apache 2.0 License
 ```
 
-## Python API
+## Python API Reference
 
-For programmatic access, you can import and use MiRAGE modules directly:
+MiRAGE provides a clean Python library API — use it like HuggingFace Transformers or OpenAI. There are **two ways** to use MiRAGE: the **Python library** (for custom scripts) and the **CLI** (for quick terminal usage). Both are fully supported.
+
+### Core Classes
+
+| Class | Description |
+|-------|-------------|
+| `MiRAGE` | Main pipeline — create, configure, and run |
+| `MiRAGEConfig` | Configuration with 47 parameters across 12 categories |
+| `MiRAGEResults` | Iterable results with save/load, filter, sample, DataFrame |
+
+### MiRAGE Class
 
 ```python
-# Import the main pipeline
-from mirage import run_pipeline
-# Or import specific components
-from mirage.core.llm import call_llm_simple, call_vlm_interweaved
-from mirage.pipeline.context import build_complete_context
-from mirage.pipeline.qa_generator import generate_qa, verify_qa
-from mirage.pipeline.domain import fetch_domain_and_role
-from mirage.embeddings.models import NomicVLEmbed, get_best_embedding_model
-from mirage.utils.preflight import run_preflight_checks
+from mirage import MiRAGE
 
-# Example: Run preflight checks
-success, results = run_preflight_checks()
+# Create a pipeline
+pipeline = MiRAGE(
+    input_dir="data/my_docs",
+    output_dir="output/results",
+    backend="gemini",               # "gemini", "openai", "ollama"
+    api_key="your-key",
+    num_qa_pairs=50,
+)
 
-# Example: Call LLM
-response = call_llm_simple("What is 2+2?")
+# Run the full pipeline
+results = pipeline.run()
 
-# Example: Use embedding model
-embedder = NomicVLEmbed()
-embedding = embedder.encode("Sample text")
+# Validate configuration before a long run
+pipeline.preflight()  # Returns True/False
 
-# Example: Track token usage
-from mirage.core.llm import get_token_stats, print_token_stats, reset_token_stats
+# Update settings (supports method chaining)
+pipeline.configure(num_qa_pairs=100, max_depth=3)
 
-# After running LLM calls, check token usage
-stats = get_token_stats()
-print(f"Input tokens: {stats['total_input_tokens']}")
-print(f"Output tokens: {stats['total_output_tokens']}")
+# Load from a YAML config file
+pipeline = MiRAGE.from_config("config.yaml", api_key="your-key")
 
-# Print formatted summary
-print_token_stats()
-
-# Reset counters for a new run
-reset_token_stats()
+# Save config for reproducibility
+pipeline.save_config("my_experiment.yaml")
 ```
 
-See the module docstrings for detailed API documentation.
+### MiRAGEResults Class
+
+```python
+results = pipeline.run()
+
+# Iterate, index, length
+for qa in results:
+    print(qa['question'], qa['answer'])
+
+first_qa = results[0]
+print(f"Total: {len(results)}")
+
+# Quick access to all questions/answers
+print(results.questions)    # ["What is...", "How does...", ...]
+print(results.answers)      # ["The answer is...", ...]
+
+# Filter by field
+multihop = results.filter(question_type="multihop")
+hard = results.filter(difficulty="hard")
+
+# Random sample
+subset = results.sample(n=10, seed=42)
+
+# Save (JSON or JSONL)
+results.save("dataset.json")
+results.save("dataset.jsonl", format="jsonl")
+
+# Load from file
+loaded = MiRAGEResults.load("dataset.json")
+
+# Convert to pandas DataFrame
+df = results.to_dataframe()
+df.to_csv("dataset.csv")
+```
+
+### MiRAGEConfig Class
+
+```python
+from mirage import MiRAGEConfig
+
+# Create from keyword arguments
+config = MiRAGEConfig(backend="gemini", num_qa_pairs=100, device="cuda:0")
+
+# Create from dictionary
+config = MiRAGEConfig.from_dict({"backend": "gemini", "num_qa_pairs": 100})
+
+# Load from YAML
+config = MiRAGEConfig.from_yaml("config.yaml")
+
+# Save to YAML
+config.save_yaml("my_config.yaml")
+
+# Convert to dict
+d = config.to_dict()
+```
+
+### Configuration Parameters
+
+| Category | Parameters |
+|----------|-----------|
+| **Core** | `input_dir`, `output_dir`, `backend`, `api_key` |
+| **Models** | `llm_model`, `vlm_model`, `embedding_model`, `reranker_model` |
+| **QA Generation** | `num_qa_pairs`, `qa_type`, `max_depth`, `max_breadth`, `chunks_per_search`, `chunk_addition_mode` |
+| **Document Processing** | `ocr_engine`, `image_resolution_scale`, `do_ocr`, `do_table_structure`, `do_code_enrichment`, `do_formula_enrichment` |
+| **Chunking** | `chunk_window_size`, `chunk_overlap_size` |
+| **Embeddings** | `embed_batch_size`, `cache_embeddings`, `faiss_use_gpu`, `faiss_gpu_id` |
+| **Parallel Processing** | `max_workers`, `num_cpu_workers`, `dedup_max_workers` |
+| **Rate Limiting** | `requests_per_minute`, `burst_size` |
+| **Device & GPU** | `device`, `embedding_gpus`, `pdf_processing_gpus` |
+| **Pipeline Control** | `skip_pdf_processing`, `skip_chunking`, `run_deduplication`, `run_evaluation`, `enable_checkpointing`, `max_pages`, `max_pdfs` |
+| **QA Correction** | `qa_correction_enabled`, `qa_correction_max_attempts` |
+| **Deduplication** | `dedup_alpha`, `dedup_question_similarity_threshold` |
+
+### Low-Level API (Advanced)
+
+For fine-grained control, you can import individual components:
+
+```python
+from mirage import run_pipeline, run_preflight_checks
+from mirage import get_device, is_gpu_available
+from mirage.core.llm import call_llm_simple, get_token_stats, print_token_stats
+from mirage.embeddings.models import NomicVLEmbed, get_best_embedding_model
+from mirage.pipeline.context import build_complete_context
+from mirage.pipeline.domain import fetch_domain_and_role
+```
 
 ## Examples
 
-### Generate QA from PDFs
+MiRAGE comes with ready-to-run example scripts in the [`examples/`](examples/) directory:
+
+| Script | Description |
+|--------|-------------|
+| [`01_quick_start.py`](examples/01_quick_start.py) | Minimal 10-line example to generate your first QA dataset |
+| [`02_advanced_config.py`](examples/02_advanced_config.py) | Full configuration with models, devices, OCR, and more |
+| [`03_from_config_file.py`](examples/03_from_config_file.py) | Load settings from YAML, save configs for reproducibility |
+| [`04_results_analysis.py`](examples/04_results_analysis.py) | Load, filter, sample, and export existing QA datasets |
+| [`05_openai_backend.py`](examples/05_openai_backend.py) | Use OpenAI (GPT-4o) instead of Gemini |
+| [`06_method_chaining.py`](examples/06_method_chaining.py) | Fluent API style and preflight validation |
+
+### Example: Quick Start (Python)
+
+```python
+from mirage import MiRAGE
+
+# 3 lines to generate a QA dataset
+pipeline = MiRAGE(input_dir="data/docs", output_dir="output", backend="gemini", api_key="YOUR_KEY")
+results = pipeline.run()
+results.save("my_dataset.json")
+```
+
+### Example: Quick Start (CLI)
 
 ```bash
-# Using Gemini
+# Same thing from the terminal
 export GEMINI_API_KEY="your-key"
-run_mirage -i data/pdfs -o output/qa_dataset --num-qa-pairs 100
-
-# Using OpenAI  
-export OPENAI_API_KEY="your-key"
-run_mirage -i data/pdfs -o output/qa_dataset --backend openai --num-qa-pairs 100
-
-# Using Ollama (local, free)
-run_mirage -i data/pdfs -o output/qa_dataset --backend ollama --num-qa-pairs 100
+run_mirage --input data/docs --output output --num-qa-pairs 10
 ```
 
-### Generate More QA Pairs
+### Example: Advanced (Python)
 
-```bash
-run_mirage -i data/documents -o output/large_dataset --num-qa-pairs 500
+```python
+from mirage import MiRAGE
+
+pipeline = MiRAGE(
+    input_dir="data/papers",
+    output_dir="output/papers_qa",
+    backend="gemini",
+    api_key="your-key",
+    num_qa_pairs=200,
+    max_depth=3,
+    embedding_model="nomic",
+    device="cuda:0",
+    run_deduplication=True,
+)
+results = pipeline.run()
+
+# Filter and export
+multihop = results.filter(question_type="multihop")
+df = multihop.to_dataframe()
+df.to_csv("multihop_qa.csv")
 ```
 
-### Use More Workers
+### Example: CLI with All Options
 
 ```bash
-run_mirage -i data/documents -o output/fast_run --max-workers 8 --num-qa-pairs 100
-```
-
-### Skip Already Processed Steps
-
-```bash
-# If you already have markdown files
-run_mirage -i data/documents -o output/results --skip-pdf-processing --num-qa-pairs 100
-
-# If you already have chunks
-run_mirage -i data/documents -o output/results --skip-chunking --num-qa-pairs 100
-```
-
-### Custom Models
-
-```bash
-# Use specific embedding model
-run_mirage -i data/documents -o output/results \
-  --embedding-model nomic --num-qa-pairs 100
-
-# Use specific reranker
-run_mirage -i data/documents -o output/results \
-  --reranker-model monovlm --num-qa-pairs 100
-
-# Custom multi-hop depth
-run_mirage -i data/documents -o output/results \
-  --max-depth 3 --num-qa-pairs 100
+run_mirage \
+  --input data/documents \
+  --output output/results \
+  --backend gemini \
+  --api-key YOUR_KEY \
+  --num-qa-pairs 100 \
+  --max-depth 3 \
+  --embedding-model nomic \
+  --reranker-model gemini_vlm \
+  --max-workers 8 \
+  --deduplication \
+  --evaluation \
+  --verbose
 ```
 
 ## Troubleshooting

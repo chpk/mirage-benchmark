@@ -19,7 +19,7 @@ Quick Start (CLI):
     $ run_mirage --input data/my_docs --output output/results --backend gemini --api-key YOUR_KEY
 """
 
-__version__ = "1.4.0"
+__version__ = "2.0.0"
 __author__ = "MiRAGE Authors"
 
 # =============================================================================
